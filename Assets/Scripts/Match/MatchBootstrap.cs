@@ -54,6 +54,7 @@ namespace FootballLegends.Match
 
         private void Update()
         {
+            if (complaintText != null && Time.time >= complaintMessageUntil) complaintText.text = "";
             if (matchStopped)
             {
                 if (lineTimer > 0f) lineTimer -= Time.deltaTime;
@@ -70,7 +71,6 @@ namespace FootballLegends.Match
                 lineTimer -= Time.deltaTime;
                 if (lineTimer <= 0f && offsideLine != null) offsideLine.enabled = false;
             }
-            if (complaintText != null && Time.time >= complaintMessageUntil) complaintText.text = "";
             for (int i = 0; i < players.Count; i++)
             {
                 MatchPlayer p = players[i];
@@ -423,7 +423,6 @@ namespace FootballLegends.Match
 
         private void PlayOn()
         {
-            if (refereePanel != null) refereePanel.SetActive(false);
             ballBody.isKinematic = false;
             matchStopped = false;
             SetStatus("ÁRBITRO: SEGUE O JOGO");
@@ -484,7 +483,8 @@ namespace FootballLegends.Match
         private void PassBall()
         {
             if (controlledPlayer == null) return;
-            MatchPlayer receiver = teamA[teamA.Count - 1];
+            MatchPlayer receiver = FindForwardReceiver(controlledPlayer, teamA, 1);
+            if (receiver == null) { SetStatus("NÃO HÁ COMPANHEIRO PARA RECEBER"); return; }
             ballBody.velocity = Vector3.zero;
             ballBody.angularVelocity = Vector3.zero;
             ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.35f, 0f);
