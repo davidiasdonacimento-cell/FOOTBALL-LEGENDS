@@ -110,7 +110,7 @@ namespace FootballLegends.Match
                 new Vector3(11f, 0.9f, -14f), new Vector3(-6f, 0.9f, -3f),
                 new Vector3(6f, 0.9f, -3f), new Vector3(0f, 0.9f, 3f),
                 new Vector3(-9f, 0.9f, 8f), new Vector3(9f, 0.9f, 8f),
-                new Vector3(0f, 0.9f, 14f)
+                new Vector3(0f, 0.9f, 18f)
             };
             Vector3[] formationB =
             {
@@ -119,7 +119,7 @@ namespace FootballLegends.Match
                 new Vector3(11f, 0.9f, 14f), new Vector3(-6f, 0.9f, 3f),
                 new Vector3(6f, 0.9f, 3f), new Vector3(0f, 0.9f, -3f),
                 new Vector3(-9f, 0.9f, -8f), new Vector3(9f, 0.9f, -8f),
-                new Vector3(0f, 0.9f, -14f)
+                new Vector3(0f, 0.9f, -18f)
             };
 
             for (int i = 0; i < formationA.Length; i++)
@@ -251,8 +251,11 @@ namespace FootballLegends.Match
                 aiClock = 0f;
                 List<MatchPlayer> attacking = Random.value > 0.5f ? teamA : teamB;
                 int direction = attacking == teamA ? 1 : -1;
-                MatchPlayer receiver = attacking[Random.Range(5, attacking.Count)];
-                ball.transform.position = receiver.transform.position + new Vector3(0f, -0.3f, -direction * 1.5f);
+                MatchPlayer receiver = attacking[attacking.Count - 1];
+                // Deterministic training scenarios alternate between legal and offside runs.
+                float runZ = direction * (Random.value < 0.35f ? 21f : 10f);
+                receiver.transform.position = new Vector3(receiver.transform.position.x, 0.9f, runZ);
+                ball.transform.position = new Vector3(0f, 0.55f, runZ - direction * 4f);
                 OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, receiver.TeamId, direction);
                 ShowOffsideLine(result.LineZ, result.IsOffside);
                 if (result.IsOffside)
@@ -298,8 +301,18 @@ namespace FootballLegends.Match
         private void PassBall()
         {
             if (controlledPlayer == null) return;
-            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 2f);
-            SetStatus("PASSE EXECUTADO");
+            MatchPlayer receiver = teamA[teamA.Count - 1];
+            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 0f);
+            OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, 0, 1);
+            ShowOffsideLine(result.LineZ, result.IsOffside);
+            if (result.IsOffside)
+            {
+                SetStatus("IMPEDIMENTO • PASSE CANCELADO");
+                ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 0f);
+                return;
+            }
+            ball.transform.position = receiver.transform.position + new Vector3(0f, -0.3f, 0f);
+            SetStatus("PASSE PARA O JOGADOR " + receiver.ShirtNumber);
         }
 
         private void ShootBall()
