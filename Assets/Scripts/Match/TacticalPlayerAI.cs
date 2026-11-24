@@ -4,8 +4,8 @@ using UnityEngine;
 namespace FootballLegends.Match
 {
     /// <summary>
-    /// Lightweight team-aware match AI. Tactical decisions are refreshed at a
-    /// lower frequency, while movement and animation are updated every frame.
+    /// Rule-based team AI with pass selection, attacking runs and zonal marking.
+    /// Tactical choices are refreshed periodically; movement remains frame-based.
     /// </summary>
     public sealed class TacticalPlayerAI : MonoBehaviour
     {
@@ -20,6 +20,7 @@ namespace FootballLegends.Match
         private Vector3 facingTarget;
         private float thinkTimer;
         private float moveSpeed;
+        private float nextPassTime;
         private bool carryingBall;
         private bool targetReady;
 
@@ -36,6 +37,7 @@ namespace FootballLegends.Match
             targetPosition = homePosition;
             facingTarget = matchBall != null ? matchBall.position : homePosition + Vector3.forward * attackDirection;
             targetReady = true;
+            nextPassTime = Time.time + Random.Range(0.7f, 1.4f);
             thinkTimer = Random.Range(0f, 0.15f);
         }
 
@@ -77,10 +79,10 @@ namespace FootballLegends.Match
             MatchPlayer closestTeammate = FindClosest(teammates, ballPosition, out float ownDistance);
             FindClosest(opponents, ballPosition, out float opponentDistance);
 
-            bool teamHasPossession = ownDistance < 2.35f &&
-                ownDistance <= opponentDistance + 0.55f;
-            bool opponentHasPossession = opponentDistance < 2.35f &&
-                opponentDistance < ownDistance - 0.25f;
+            bool teamHasPossession = ownDistance < 2.5f &&
+                ownDistance <= opponentDistance + 0.65f;
+            bool opponentHasPossession = opponentDistance < 2.5f &&
+                opponentDistance < ownDistance - 0.2f;
 
             carryingBall = false;
             moveSpeed = 4.25f;
@@ -98,25 +100,29 @@ namespace FootballLegends.Match
             }
             else if (closestTeammate == player && !opponentHasPossession)
             {
-                target = ballPosition + new Vector3(0f, 0f, -attackDirection * 0.72f);
+                target = ballPosition + Vector3.forward * -attackDirection * 0.72f;
                 moveSpeed = 5.0f;
-                if (teamHasPossession && Vector3.Distance(player.transform.position, ballPosition) < 2.2f)
+
+                if (teamHasPossession && Vector3.Distance(player.transform.position, ballPosition) < 2.35f)
                 {
-                    carryingBall = true;
-                    target = ballPosition + Vector3.forward * attackDirection * 1.2f;
-                    moveSpeed = 4.65f;
-                    facingTarget = target + Vector3.forward * attackDirection * 5f;
+                    if (!TryExecutePass(ballPosition))
+                    {
+                        carryingBall = true;
+                        target = ChooseDribbleTarget(ballPosition);
+                        moveSpeed = 4.65f;
+                        facingTarget = target + Vector3.forward * attackDirection * 5f;
+                    }
                 }
             }
             else if (opponentHasPossession)
             {
-                int pressIndex = GetRankByDistance(teammates, ballPosition, player);
-                if (pressIndex == 1)
+                int pressRank = GetRankByDistance(teammates, ballPosition, player);
+                if (pressRank == 1)
                 {
                     target = ballPosition + Vector3.forward * -attackDirection * 0.9f;
                     moveSpeed = 4.9f;
                 }
-                else if (pressIndex == 2)
+                else if (pressRank == 2)
                 {
                     target = ballPosition + Vector3.forward * -attackDirection * 3.1f;
                     target.x = Mathf.Lerp(home.x, ballPosition.x, 0.38f);
@@ -129,8 +135,8 @@ namespace FootballLegends.Match
             }
             else if (teamHasPossession)
             {
-                target = SupportTarget(ballPosition);
-                moveSpeed = 4.4f;
+                target = AttackingSupportTarget(ballPosition);
+                moveSpeed = player.ShirtNumber >= 9 ? 4.85f : 4.4f;
                 facingTarget = ballPosition;
             }
             else
@@ -145,17 +151,139 @@ namespace FootballLegends.Match
             targetReady = true;
         }
 
-        private Vector3 SupportTarget(Vector3 ballPosition)
+        private bool TryExecutePass(Vector3 ballPosition)
+        {
+            if (ballBody == null || ballBody.isKinematic || Time.time < nextPassTime)
+                return false;
+
+            MatchPlayer receiver = ChoosePassReceiver(ballPosition, out float bestScore);
+            if (receiver == null || bestScore < 1.15f)
+                return false;
+
+            Vector3 target = receiver.transform.position;
+            Vector3 flatDirection = target - ballPosition;
+            flatDirection.y = 0f;
+            if (flatDirection.sqrMagnitude < 0.01f) return false;
+
+            OffsideResult offside = OffsideRuleSystem.Evaluate(receiver, ballPosition,
+                BuildPlayerSnapshot(), player.TeamId, attackDirection);
+            if (offside.IsOffside) return false;
+
+            flatDirection.Normalize();
+            ballBody.velocity = Vector3.zero;
+            ballBody.angularVelocity = Vector3.zero;
+            ballBody.AddForce(flatDirection * 8.8f + Vector3.up * 0.9f, ForceMode.Impulse);
+            player.Face(receiver.transform.position);
+            player.TriggerKick();
+            carryingBall = false;
+            nextPassTime = Time.time + Random.Range(1.8f, 3.0f);
+            return true;
+        }
+
+        private IReadOnlyList<MatchPlayer> BuildPlayerSnapshot()
+        {
+            List<MatchPlayer> all = new List<MatchPlayer>(teammates.Count + opponents.Count);
+            for (int i = 0; i < teammates.Count; i++) all.Add(teammates[i]);
+            for (int i = 0; i < opponents.Count; i++) all.Add(opponents[i]);
+            return all;
+        }
+
+        private MatchPlayer ChoosePassReceiver(Vector3 ballPosition, out float bestScore)
+        {
+            MatchPlayer best = null;
+            bestScore = float.MinValue;
+
+            for (int i = 0; i < teammates.Count; i++)
+            {
+                MatchPlayer candidate = teammates[i];
+                if (candidate == null || candidate == player || candidate.IsGoalkeeper ||
+                    candidate.IsSentOff || candidate.IsComplaining) continue;
+
+                Vector3 offset = candidate.transform.position - ballPosition;
+                float distance = offset.magnitude;
+                if (distance < 3.2f || distance > 19f) continue;
+
+                OffsideResult offside = OffsideRuleSystem.Evaluate(candidate, ballPosition,
+                    BuildPlayerSnapshot(), player.TeamId, attackDirection);
+                if (offside.IsOffside) continue;
+
+                float forwardProgress = attackDirection * offset.z;
+                float nearestOpponent = NearestOpponentDistance(candidate.transform.position);
+                float laneClearance = PassLaneClearance(ballPosition, candidate.transform.position);
+                float score = 2.0f;
+                score += Mathf.Clamp(forwardProgress / 7f, -1.1f, 1.8f);
+                score += Mathf.Clamp((nearestOpponent - 1.2f) * 0.42f, -1.0f, 1.5f);
+                score += Mathf.Clamp((laneClearance - 0.65f) * 0.65f, -1.4f, 1.2f);
+                score -= Mathf.Abs(offset.x) / 22f;
+                score -= Mathf.Abs(distance - 9f) / 24f;
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+            return best;
+        }
+
+        private float NearestOpponentDistance(Vector3 position)
+        {
+            float best = 100f;
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                MatchPlayer opponent = opponents[i];
+                if (opponent == null || opponent.IsSentOff || opponent.IsComplaining) continue;
+                best = Mathf.Min(best, Vector3.Distance(position, opponent.transform.position));
+            }
+            return best;
+        }
+
+        private float PassLaneClearance(Vector3 start, Vector3 end)
+        {
+            float clearance = 100f;
+            Vector3 segment = end - start;
+            float lengthSquared = segment.sqrMagnitude;
+            if (lengthSquared < 0.01f) return 0f;
+
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                MatchPlayer opponent = opponents[i];
+                if (opponent == null || opponent.IsSentOff || opponent.IsComplaining) continue;
+                float t = Mathf.Clamp01(Vector3.Dot(opponent.transform.position - start, segment) / lengthSquared);
+                Vector3 nearestPoint = start + segment * t;
+                clearance = Mathf.Min(clearance, Vector3.Distance(opponent.transform.position, nearestPoint));
+            }
+            return clearance;
+        }
+
+        private Vector3 ChooseDribbleTarget(Vector3 ballPosition)
+        {
+            float lane = Mathf.Sign(player.transform.position.x);
+            if (Mathf.Abs(lane) < 0.1f) lane = player.ShirtNumber % 2 == 0 ? -1f : 1f;
+            float pressureLeft = NearestOpponentDistance(ballPosition + Vector3.left * 2.4f);
+            float pressureRight = NearestOpponentDistance(ballPosition + Vector3.right * 2.4f);
+            float escapeSide = pressureLeft > pressureRight ? -1f : 1f;
+            float x = Mathf.Lerp(ballPosition.x, ballPosition.x + escapeSide * 2.3f, 0.55f);
+            float z = ballPosition.z + attackDirection * 4.5f;
+            return new Vector3(Mathf.Clamp(x, -15.5f, 15.5f), player.transform.position.y, z);
+        }
+
+        private Vector3 AttackingSupportTarget(Vector3 ballPosition)
         {
             float lane = Mathf.Sign(home.x);
             if (Mathf.Abs(home.x) < 0.5f)
-                lane = (player.ShirtNumber % 2 == 0) ? -1f : 1f;
+                lane = player.ShirtNumber % 2 == 0 ? -1f : 1f;
 
-            float roleOffset;
-            if (player.ShirtNumber >= 9) roleOffset = 6.5f;
-            else if (player.ShirtNumber >= 6) roleOffset = 2.0f;
-            else roleOffset = -3.8f;
+            if (player.ShirtNumber >= 9)
+            {
+                float defensiveLine = FindDefensiveLineProgress();
+                float runZ = Mathf.Max(attackDirection * home.z + 3f,
+                    Mathf.Min(defensiveLine - 1.8f, attackDirection * ballPosition.z + 9f));
+                float runX = home.x * 0.52f + lane * 1.8f + ballPosition.x * 0.12f;
+                return new Vector3(runX, player.transform.position.y, attackDirection * runZ);
+            }
 
+            float roleOffset = player.ShirtNumber >= 6 ? 2.0f : -3.8f;
             float width = player.ShirtNumber == 2 || player.ShirtNumber == 5 ? 0.78f : 0.48f;
             float desiredX = home.x * 0.52f + lane * width * 3.8f + ballPosition.x * 0.18f;
             float desiredZ = home.z + attackDirection * roleOffset;
@@ -163,13 +291,73 @@ namespace FootballLegends.Match
             return new Vector3(desiredX, player.transform.position.y, desiredZ);
         }
 
+        private float FindDefensiveLineProgress()
+        {
+            float line = 27f;
+            bool found = false;
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                MatchPlayer opponent = opponents[i];
+                if (opponent == null || opponent.IsSentOff || opponent.IsGoalkeeper) continue;
+                float progress = attackDirection * opponent.transform.position.z;
+                if (!found || progress < line)
+                {
+                    line = progress;
+                    found = true;
+                }
+            }
+            return found ? line : 18f;
+        }
+
         private Vector3 DefensiveShapeTarget(Vector3 ballPosition)
         {
             float compactX = Mathf.Lerp(home.x, ballPosition.x, 0.22f);
             float lineShift = Mathf.Clamp(ballPosition.z * 0.20f, -5.5f, 5.5f);
             float roleDepth = player.ShirtNumber <= 5 ? -attackDirection * 1.4f : 0f;
-            float z = home.z + lineShift + roleDepth;
-            return new Vector3(compactX, player.transform.position.y, z);
+            Vector3 target = new Vector3(compactX, player.transform.position.y, home.z + lineShift + roleDepth);
+
+            MatchPlayer mark = FindZonalMarkTarget(ballPosition);
+            if (mark != null)
+            {
+                float markDistance = Vector3.Distance(player.transform.position, mark.transform.position);
+                float influence = player.ShirtNumber <= 5 ? 0.48f : 0.30f;
+                if (markDistance < 13f)
+                {
+                    Vector3 markPosition = mark.transform.position;
+                    markPosition.z -= attackDirection * 1.8f;
+                    target = Vector3.Lerp(target, markPosition, influence);
+                }
+            }
+            return target;
+        }
+
+        private MatchPlayer FindZonalMarkTarget(Vector3 ballPosition)
+        {
+            MatchPlayer best = null;
+            float bestScore = float.MaxValue;
+            float ownProgress = attackDirection * player.transform.position.z;
+
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                MatchPlayer candidate = opponents[i];
+                if (candidate == null || candidate.IsSentOff || candidate.IsGoalkeeper) continue;
+
+                float opponentProgress = attackDirection * candidate.transform.position.z;
+                bool inRelevantZone = player.ShirtNumber <= 5
+                    ? opponentProgress > ownProgress - 2f
+                    : Mathf.Abs(opponentProgress - ownProgress) < 12f;
+                if (!inRelevantZone) continue;
+
+                float distance = Vector3.Distance(player.transform.position, candidate.transform.position);
+                float ballSidePenalty = Vector3.Distance(candidate.transform.position, ballPosition) * 0.12f;
+                float score = distance + ballSidePenalty;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+            return best;
         }
 
         private MatchPlayer FindClosest(IReadOnlyList<MatchPlayer> list, Vector3 position, out float distance)
@@ -187,7 +375,6 @@ namespace FootballLegends.Match
                     best = candidate;
                 }
             }
-
             distance = best == null ? float.MaxValue : Mathf.Sqrt(bestSqrDistance);
             return best;
         }
