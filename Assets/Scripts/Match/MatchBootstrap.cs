@@ -413,7 +413,6 @@ namespace FootballLegends.Match
 
         private void ConfirmOffside()
         {
-            if (refereePanel != null) refereePanel.SetActive(false);
             ballBody.isKinematic = false;
             ballBody.velocity = Vector3.zero;
             matchStopped = false;
