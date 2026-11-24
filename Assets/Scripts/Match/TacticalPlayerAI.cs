@@ -73,11 +73,22 @@ namespace FootballLegends.Match
                     target -= new Vector3(0f, 0f, attackDirection * 2.5f);
             }
 
+            bool hasTeamPossession = closest == player && nearest <= nearestOpponent && nearest < 5.0f;
+            if (hasTeamPossession && !player.IsGoalkeeper)
+                target = player.transform.position + Vector3.forward * attackDirection * 0.85f;
+
             target.x = Mathf.Clamp(target.x, -16f, 16f);
             target.z = Mathf.Clamp(target.z, -27f, 27f);
             Vector3 before = player.transform.position;
-            player.MoveTo(target, player.IsGoalkeeper ? 5.5f : 4.1f);
-            player.Face(ballPos);
+            player.MoveTo(target, player.IsGoalkeeper ? 5.5f : (hasTeamPossession ? 4.7f : 4.1f));
+            if (hasTeamPossession && ballBody != null && !ballBody.isKinematic)
+            {
+                ballBody.velocity = Vector3.zero;
+                ballBody.angularVelocity = Vector3.zero;
+                ball.position = player.transform.position + Vector3.forward * attackDirection * 0.95f + Vector3.up * 0.28f;
+                player.Face(player.transform.position + Vector3.forward * attackDirection);
+            }
+            else player.Face(ballPos);
             float actualSpeed = (player.transform.position - before).magnitude / Mathf.Max(Time.deltaTime, 0.001f);
             player.UpdateAnimation(actualSpeed);
         }
