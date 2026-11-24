@@ -20,6 +20,7 @@ namespace FootballLegends.Match
         private int previousPossessionTeam = -1;
         private float possessionChangedAt;
         private float refreshAt;
+        private MatchPlayer userControlledPlayer;
 
         public void Configure(IReadOnlyList<MatchPlayer> first, IReadOnlyList<MatchPlayer> second, Transform matchBall)
         {
@@ -70,6 +71,26 @@ namespace FootballLegends.Match
             {
                 possessionTeam = -1;
             }
+        }
+
+        public void SetUserControlledPlayer(MatchPlayer player)
+        {
+            userControlledPlayer = player;
+        }
+
+        public MatchPlayer GetUserControlledPlayer(int teamId)
+        {
+            if (userControlledPlayer == null || userControlledPlayer.IsSentOff ||
+                userControlledPlayer.TeamId != teamId)
+                return null;
+            return userControlledPlayer;
+        }
+
+        public bool IsUserPlayerNearBall(int teamId, Vector3 ballPosition, float radius)
+        {
+            MatchPlayer userPlayer = GetUserControlledPlayer(teamId);
+            return userPlayer != null &&
+                (userPlayer.transform.position - ballPosition).sqrMagnitude <= radius * radius;
         }
 
         public TacticalPhase GetPhase(int teamId)
