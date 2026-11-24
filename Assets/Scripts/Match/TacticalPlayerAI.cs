@@ -62,9 +62,13 @@ namespace FootballLegends.Match
                     target -= new Vector3(0f, 0f, attackDirection * 2.5f);
             }
 
+            target.x = Mathf.Clamp(target.x, -16f, 16f);
+            target.z = Mathf.Clamp(target.z, -27f, 27f);
+            Vector3 before = player.transform.position;
             player.MoveTo(target, player.IsGoalkeeper ? 5.5f : 4.1f);
             player.Face(ballPos);
-            player.UpdateAnimation(nearest < 9f ? 1f : 0.5f);
+            float actualSpeed = (player.transform.position - before).magnitude / Mathf.Max(Time.deltaTime, 0.001f);
+            player.UpdateAnimation(actualSpeed);
         }
     }
 }
