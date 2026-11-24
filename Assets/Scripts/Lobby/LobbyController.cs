@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace FootballLegends.Lobby
@@ -9,6 +10,8 @@ namespace FootballLegends.Lobby
         [SerializeField] private GameObject contentPanel;
         [SerializeField] private Text contentTitle;
         [SerializeField] private Text contentDescription;
+        [SerializeField] private GameObject playerMatchButton;
+        [SerializeField] private GameObject refereeMatchButton;
 
         public void OpenSection(string section)
         {
@@ -20,6 +23,24 @@ namespace FootballLegends.Lobby
             if (contentTitle != null) contentTitle.text = section.ToUpperInvariant();
             if (contentDescription != null)
                 contentDescription.text = GetSectionDescription(section);
+
+            bool showMatchModes = section == "JOGAR";
+            if (playerMatchButton != null) playerMatchButton.SetActive(showMatchModes);
+            if (refereeMatchButton != null) refereeMatchButton.SetActive(showMatchModes);
+        }
+
+        public void StartPlayerMatch()
+        {
+            PlayerPrefs.SetInt("FL_MATCH_MODE", 0);
+            PlayerPrefs.Save();
+            SceneManager.LoadScene("Match");
+        }
+
+        public void StartRefereeMatch()
+        {
+            PlayerPrefs.SetInt("FL_MATCH_MODE", 1);
+            PlayerPrefs.Save();
+            SceneManager.LoadScene("Match");
         }
 
         public void ReturnToLobby()
@@ -35,11 +56,11 @@ namespace FootballLegends.Lobby
                 case "ELENCO":
                     return "Prévia do elenco e da formação do seu clube.";
                 case "EVENTOS":
-                    return "Eventos e desafios serão apresentados aqui.";
+                    return "Eventos e desafios locais do clube.";
                 case "PERFIL":
                     return "Perfil do atleta e progresso local.";
                 case "JOGAR":
-                    return "A experiência de partida ainda está em desenvolvimento.";
+                    return "Escolha como participar: controlar um time ou apitar uma partida entre duas IAs.";
                 default:
                     return "Área do FOOTBALL LEGENDS.";
             }
