@@ -7,7 +7,17 @@
 
 ## IA e movimentação
 
-`TacticalPlayerAI` executa movimentação contínua por formação, aproximação ao portador da bola, avanço de atacantes, recomposição de defensores e posicionamento do goleiro. A lógica atual é uma primeira IA tática baseada em regras; ainda não é uma IA avançada de futebol profissional, com planejamento de jogadas, pressão coordenada e tomada de decisão completa.
+O componente `TacticalPlayerAI` foi evoluído para uma primeira camada de coordenação coletiva:
+
+- Reavalia decisões táticas em intervalos curtos, sem limitar o movimento ao intervalo de pensamento.
+- Atualiza deslocamento e animação a cada frame, corrigindo a movimentação em pequenos impulsos que ocorria quando o movimento era chamado somente após o temporizador.
+- Identifica o atleta mais próximo da bola em cada equipe.
+- Organiza pressão no portador da bola e cobertura pelo segundo defensor mais próximo.
+- Quando a equipe tem a posse, distribui os demais atletas em opções de apoio, largura e profundidade de acordo com suas posições.
+- Sem posse, os jogadores recompõem uma estrutura defensiva compacta.
+- Mantém o goleiro em uma área de atuação própria, ajustando sua posição lateral à bola.
+
+**Limite atual:** esta é uma IA tática baseada em regras e distâncias. Ainda não possui planejamento de jogadas, estratégias de equipe configuráveis, avaliação avançada de risco, aprendizado ou simulação profissional. Os comportamentos precisam ser validados em partidas reais no Unity.
 
 ## Goleiros, gols e placar
 
@@ -27,8 +37,7 @@
 - Parar e retomar a partida.
 - Aplicar cartão amarelo ou vermelho sem exigir falta ou justificativa.
 - Dois amarelos também resultam em expulsão.
-- Marcar impedimento ou deixar o jogo seguir.
-- Jogador punido faz gesto de reclamação, movimenta os braços e a boca, vira a cabeça e exibe uma fala na interface, por exemplo: “Ah, fui roubado!”.
+- Jogador punido faz gesto de reclamação, movimenta os braços e a boca, vira a cabeça e exibe uma fala na interface.
 
 ## Controles do modo jogador
 
@@ -44,8 +53,9 @@ Os atletas atuais são personagens procedurais compostos por primitivas 3D, com 
 
 ## Limites e validação pendente
 
-- A IA tática ainda é baseada em regras simples e precisa de refinamento.
+- A IA tática melhorada ainda precisa de testes de comportamento e balanceamento em partidas completas.
 - A bola e os jogadores precisam de balanceamento de física e colisões.
 - O sistema de gols, goleiros, placar, impedimento e cartões precisa ser testado em partidas completas.
 - Ainda faltam faltas, laterais, escanteios, pênaltis, substituições, cronômetro e áudio.
-- O APK ainda não foi compilado no Unity nem testado em dispositivo Android real.
+- Ainda não houve compilação no Unity 6 nem teste em dispositivo Android real.
+- Nenhum APK desta etapa foi gerado ou validado.
