@@ -414,6 +414,8 @@ namespace FootballLegends.Match
         private void ConfirmOffside()
         {
             if (refereePanel != null) refereePanel.SetActive(false);
+            ballBody.isKinematic = false;
+            ballBody.velocity = Vector3.zero;
             matchStopped = false;
             SetStatus("ÁRBITRO: IMPEDIMENTO MARCADO • TIRO LIVRE INDIRETO");
             if (offsideLine != null) offsideLine.enabled = false;
@@ -422,6 +424,7 @@ namespace FootballLegends.Match
         private void PlayOn()
         {
             if (refereePanel != null) refereePanel.SetActive(false);
+            ballBody.isKinematic = false;
             matchStopped = false;
             SetStatus("ÁRBITRO: SEGUE O JOGO");
             if (offsideLine != null) offsideLine.enabled = false;
