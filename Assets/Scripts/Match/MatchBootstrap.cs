@@ -295,7 +295,8 @@ namespace FootballLegends.Match
                 ballBody.velocity = Vector3.zero;
                 ballBody.angularVelocity = Vector3.zero;
                 Vector3 dribbleDirection = move.normalized;
-                ball.transform.position = controlledPlayer.transform.position + dribbleDirection * 1.05f + Vector3.up * 0.28f;
+                Vector3 dribblePosition = controlledPlayer.transform.position + dribbleDirection * 1.05f;
+                ball.transform.position = new Vector3(dribblePosition.x, 0.35f, dribblePosition.z);
             }
         }
 
@@ -400,7 +401,7 @@ namespace FootballLegends.Match
                 {
                     ballBody.velocity = Vector3.zero;
                     ballBody.angularVelocity = Vector3.zero;
-                    ball.transform.position = keeper.transform.position + new Vector3(0f, 0.2f, keeper.TeamId == 0 ? 0.8f : -0.8f);
+                    ball.transform.position = new Vector3(keeper.transform.position.x, 0.35f, keeper.transform.position.z + (keeper.TeamId == 0 ? 0.8f : -0.8f));
                     SetStatus("DEFESA DO GOLEIRO!");
                     break;
                 }
@@ -499,7 +500,7 @@ namespace FootballLegends.Match
             if (receiver == null) { SetStatus("NÃO HÁ COMPANHEIRO PARA RECEBER"); return; }
             ballBody.velocity = Vector3.zero;
             ballBody.angularVelocity = Vector3.zero;
-            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.35f, 0f);
+            ball.transform.position = new Vector3(controlledPlayer.transform.position.x, 0.35f, controlledPlayer.transform.position.z);
             OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, 0, 1);
             ShowOffsideLine(result.LineZ, result.IsOffside);
             if (result.IsOffside)
@@ -518,7 +519,7 @@ namespace FootballLegends.Match
             if (controlledPlayer == null) return;
             ballBody.velocity = Vector3.zero;
             ballBody.angularVelocity = Vector3.zero;
-            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.4f, 0.6f);
+            ball.transform.position = new Vector3(controlledPlayer.transform.position.x, 0.35f, controlledPlayer.transform.position.z + 0.6f);
             ballBody.AddForce(new Vector3(0f, 4.5f, 19f), ForceMode.Impulse);
             controlledPlayer.TriggerKick();
             SetStatus("CHUTE EXECUTADO");
@@ -559,7 +560,7 @@ namespace FootballLegends.Match
             if (nearest != null && nearestDistance <= 4.2f)
             {
                 ballBody.velocity = Vector3.zero;
-                ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.35f, 0f);
+                ball.transform.position = new Vector3(controlledPlayer.transform.position.x, 0.35f, controlledPlayer.transform.position.z);
                 SetStatus("DESARME BEM-SUCEDIDO");
             }
             else
