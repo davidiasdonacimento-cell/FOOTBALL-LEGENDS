@@ -240,6 +240,7 @@ namespace FootballLegends.Match
                 CreateHudButton(canvas.transform, "CORRER", new Vector2(0.76f, 0.18f), new Vector2(0.12f, 0.10f), Sprint);
                 CreateHudButton(canvas.transform, "TROCAR", new Vector2(0.73f, 0.34f), new Vector2(0.12f, 0.10f), SwitchPlayer);
                 CreateHudButton(canvas.transform, "DESARMAR", new Vector2(0.87f, 0.55f), new Vector2(0.14f, 0.10f), Tackle);
+                CreateHudButton(canvas.transform, "JOGADA", new Vector2(0.73f, 0.55f), new Vector2(0.13f, 0.10f), TriggerTeamPlay);
                 BuildPlayerSelectionPanel(canvas.transform);
             }
             else
@@ -434,15 +435,61 @@ namespace FootballLegends.Match
         private MatchPlayer FindForwardReceiver(MatchPlayer owner, List<MatchPlayer> own, int direction)
         {
             MatchPlayer best = null;
-            float bestProgress = float.MinValue;
-            foreach (MatchPlayer p in own)
+            float bestScore = float.MinValue;
+            Vector3 origin = ball != null ? ball.transform.position : owner.transform.position;
+            List<MatchPlayer> opposition = owner.TeamId == 0 ? teamB : teamA;
+
+            foreach (MatchPlayer candidate in own)
             {
-                if (p == null || p == owner || p.IsSentOff || p.IsGoalkeeper) continue;
-                float progress = direction * p.transform.position.z;
-                if (progress > bestProgress && Vector3.Distance(p.transform.position, owner.transform.position) > 3f)
-                { bestProgress = progress; best = p; }
+                if (candidate == null || candidate == owner || candidate.IsSentOff ||
+                    candidate.IsComplaining || candidate.IsGoalkeeper) continue;
+
+                Vector3 offset = candidate.transform.position - origin;
+                float distance = offset.magnitude;
+                if (distance < 3f || distance > 19f) continue;
+
+                OffsideResult offside = OffsideRuleSystem.Evaluate(candidate, origin, players,
+                    owner.TeamId, direction);
+                if (offside.IsOffside) continue;
+
+                float nearestOpponent = 100f;
+                for (int i = 0; i < opposition.Count; i++)
+                {
+                    MatchPlayer opponent = opposition[i];
+                    if (opponent == null || opponent.IsSentOff || opponent.IsComplaining) continue;
+                    nearestOpponent = Mathf.Min(nearestOpponent,
+                        Vector3.Distance(candidate.transform.position, opponent.transform.position));
+                }
+
+                float laneClearance = 100f;
+                Vector3 segment = candidate.transform.position - origin;
+                float segmentSqr = segment.sqrMagnitude;
+                for (int i = 0; i < opposition.Count; i++)
+                {
+                    MatchPlayer opponent = opposition[i];
+                    if (opponent == null || opponent.IsSentOff || opponent.IsComplaining) continue;
+                    float t = Mathf.Clamp01(Vector3.Dot(opponent.transform.position - origin, segment) /
+                        Mathf.Max(segmentSqr, 0.001f));
+                    Vector3 closest = origin + segment * t;
+                    laneClearance = Mathf.Min(laneClearance,
+                        Vector3.Distance(opponent.transform.position, closest));
+                }
+
+                float progress = direction * offset.z;
+                float score = Mathf.Clamp(progress / 7f, -1.2f, 2.0f);
+                score += Mathf.Clamp((nearestOpponent - 1.0f) * 0.48f, -1.0f, 1.6f);
+                score += Mathf.Clamp((laneClearance - 0.6f) * 0.7f, -1.5f, 1.3f);
+                score -= Mathf.Abs(distance - 8.5f) / 22f;
+                if (candidate.ShirtNumber == 7 || candidate.ShirtNumber == 8) score += 0.25f;
+                if (candidate == controlledPlayer) score += 2.0f;
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                }
             }
-            return best;
+            return bestScore >= 0.35f ? best : null;
         }
 
         private void CheckGoal()
@@ -581,7 +628,7 @@ namespace FootballLegends.Match
         {
             if (controlledPlayer == null) return;
             MatchPlayer receiver = FindForwardReceiver(controlledPlayer, teamA, 1);
-            if (receiver == null) { SetStatus("NÃO HÁ COMPANHEIRO PARA RECEBER"); return; }
+            if (receiver == null) { SetStatus("NÃO HÁ OPÇÃO DE PASSE LIVRE"); return; }
             ballBody.velocity = Vector3.zero;
             ballBody.angularVelocity = Vector3.zero;
             ball.transform.position = new Vector3(controlledPlayer.transform.position.x, 0.35f, controlledPlayer.transform.position.z);
@@ -595,7 +642,19 @@ namespace FootballLegends.Match
             Vector3 passDirection = (receiver.transform.position - ball.transform.position).normalized;
             ballBody.AddForce(passDirection * 10f + Vector3.up * 1.2f, ForceMode.Impulse);
             controlledPlayer.TriggerKick();
-            SetStatus("PASSE PARA O JOGADOR " + receiver.ShirtNumber);
+            SetStatus("PASSE PARA O JOGADOR " + receiver.ShirtNumber + " • TABELA DISPONÍVEL");
+        }
+
+        private void TriggerTeamPlay()
+        {
+            if (controlledPlayer == null || MatchTacticsDirector.Instance == null) return;
+            if (Vector3.Distance(controlledPlayer.transform.position, ball.transform.position) > 3.5f)
+            {
+                SetStatus("APROXIME-SE DA BOLA PARA CHAMAR A JOGADA");
+                return;
+            }
+            if (MatchTacticsDirector.Instance.ActivateAttackingPattern(0, controlledPlayer, 6.5f))
+                SetStatus("JOGADA ENSAIADA • TRIÂNGULO + ULTRAPASSAGEM");
         }
 
         private void ShootBall()
