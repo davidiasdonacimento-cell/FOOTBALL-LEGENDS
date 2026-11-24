@@ -96,3 +96,14 @@ Os atletas atuais são personagens procedurais compostos por primitivas 3D, com 
 - O botão TROCAR continua permitindo transferir o controle para outro companheiro durante a partida; a IA volta a controlar o atleta anterior.
 - O modo árbitro IA x IA não utiliza essa tela de seleção.
 - A IA dos companheiros pode conduzir, passar e apoiar as jogadas sem exigir que o usuário controle mais de um atleta.
+
+
+## Apoio tático ao atleta controlado — nova etapa
+
+- O diretor tático mantém a referência do atleta atualmente controlado pelo usuário e atualiza essa referência quando o botão TROCAR é usado.
+- Quando esse atleta está próximo da bola, os companheiros em posse se reorganizam em opções de passe diagonais, apoio curto e profundidade pelos corredores.
+- Os atacantes procuram espaço à frente do portador, respeitando uma margem conservadora em relação à linha defensiva para reduzir risco de impedimento.
+- Meio-campistas oferecem linhas de passe laterais e curtas; defensores permanecem em posição de segurança para reciclar a posse.
+- Ao escolher um passe, a IA dá preferência moderada ao atleta controlado quando ele está elegível, desmarcado, em posição legal e com corredor de passe aceitável. A preferência não força passes bloqueados ou impedidos.
+- A referência do jogador é atualizada ao selecionar o atleta antes do início e durante a partida.
+- **Limite:** esta é coordenação determinística por regras e distâncias. Ainda requer compilação Unity, testes de partidas e ajuste de pesos/posicionamento; não é IA treinada nem validação de nível profissional.
