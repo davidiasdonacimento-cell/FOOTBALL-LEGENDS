@@ -291,34 +291,6 @@ namespace FootballLegends.Match
         private void UpdateAiMatch()
         {
             aiClock += Time.deltaTime;
-            if (aiClock >= 4.5f)
-            {
-                aiClock = 0f;
-                List<MatchPlayer> attacking = Random.value > 0.5f ? teamA : teamB;
-                int direction = attacking == teamA ? 1 : -1;
-                MatchPlayer receiver = attacking[attacking.Count - 1];
-                // Deterministic training scenarios alternate between legal and offside runs.
-                float runZ = direction * (Random.value < 0.35f ? 21f : 10f);
-                receiver.transform.position = new Vector3(receiver.transform.position.x, 0.9f, runZ);
-                ball.transform.position = new Vector3(0f, 0.55f, runZ - direction * 4f);
-                OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, receiver.TeamId, direction);
-                ShowOffsideLine(result.LineZ, result.IsOffside);
-                if (result.IsOffside)
-                {
-                    matchStopped = true;
-                    SetStatus("LANCE EM ANÁLISE • " + result.Explanation);
-                    if (refereePanel != null) refereePanel.SetActive(true);
-                }
-                else
-                {
-                    SetStatus("JOGO EM ANDAMENTO • " + result.Explanation);
-                }
-            }
-        }
-
-        private void UpdateAiMatch()
-        {
-            aiClock += Time.deltaTime;
             if (aiClock < 1.5f) return;
             aiClock = 0f;
             MatchPlayer owner = FindClosestActivePlayer(ball.transform.position);
