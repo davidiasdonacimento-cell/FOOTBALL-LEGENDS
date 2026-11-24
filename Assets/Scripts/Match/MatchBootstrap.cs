@@ -183,6 +183,7 @@ namespace FootballLegends.Match
         {
             MatchTacticsDirector director = gameObject.AddComponent<MatchTacticsDirector>();
             director.Configure(teamA, teamB, ball.transform);
+            director.SetUserControlledPlayer(refereeMode ? null : controlledPlayer);
             ConfigureTeamAI(teamA, teamB, 1);
             ConfigureTeamAI(teamB, teamA, -1);
         }
@@ -316,6 +317,8 @@ namespace FootballLegends.Match
             selectedPlayerIndex = teamA.IndexOf(nextPlayer);
             TacticalPlayerAI selectedAI = controlledPlayer.GetComponent<TacticalPlayerAI>();
             if (selectedAI != null) selectedAI.enabled = false;
+            if (MatchTacticsDirector.Instance != null)
+                MatchTacticsDirector.Instance.SetUserControlledPlayer(refereeMode ? null : controlledPlayer);
             RefreshPlayerSelectionText();
         }
 
