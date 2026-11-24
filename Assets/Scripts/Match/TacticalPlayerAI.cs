@@ -85,6 +85,9 @@ namespace FootballLegends.Match
                 opponentDistance < ownDistance - 0.2f;
 
             MatchTacticsDirector director = MatchTacticsDirector.Instance;
+            MatchPlayer userPlayer = director != null ? director.GetUserControlledPlayer(player.TeamId) : null;
+            bool userPlayerHasBall = userPlayer != null &&
+                Vector3.Distance(userPlayer.transform.position, ballPosition) < 2.25f;
             if (director != null)
             {
                 MatchTacticsDirector.TacticalPhase phase = director.GetPhase(player.TeamId);
@@ -146,9 +149,11 @@ namespace FootballLegends.Match
             }
             else if (teamHasPossession)
             {
-                target = AttackingSupportTarget(ballPosition);
-                moveSpeed = player.ShirtNumber >= 9 ? 4.85f : 4.4f;
-                facingTarget = ballPosition;
+                target = userPlayerHasBall
+                    ? SupportControlledCarrier(userPlayer, ballPosition)
+                    : AttackingSupportTarget(ballPosition);
+                moveSpeed = player.ShirtNumber >= 9 ? 4.95f : 4.5f;
+                facingTarget = userPlayerHasBall ? userPlayer.transform.position : ballPosition;
             }
             else
             {
@@ -228,6 +233,12 @@ namespace FootballLegends.Match
                 score -= Mathf.Abs(offset.x) / 22f;
                 score -= Mathf.Abs(distance - 9f) / 24f;
 
+                MatchTacticsDirector director = MatchTacticsDirector.Instance;
+                MatchPlayer userPlayer = director != null
+                    ? director.GetUserControlledPlayer(player.TeamId) : null;
+                if (candidate == userPlayer)
+                    score += 2.6f;
+
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -300,6 +311,41 @@ namespace FootballLegends.Match
             float desiredZ = home.z + attackDirection * roleOffset;
             desiredZ = Mathf.Lerp(desiredZ, ballPosition.z + attackDirection * roleOffset, 0.34f);
             return new Vector3(desiredX, player.transform.position.y, desiredZ);
+        }
+
+        private Vector3 SupportControlledCarrier(MatchPlayer carrier, Vector3 ballPosition)
+        {
+            float side = Mathf.Sign(home.x);
+            if (Mathf.Abs(side) < 0.1f)
+                side = player.ShirtNumber % 2 == 0 ? -1f : 1f;
+
+            float carrierProgress = attackDirection * carrier.transform.position.z;
+            float forwardLimit = Mathf.Min(FindDefensiveLineProgress() - 2.0f, 25f);
+            float supportX;
+            float supportProgress;
+
+            if (player.ShirtNumber >= 9)
+            {
+                // Forwards attack the channels ahead of the user, but stay onside.
+                supportX = carrier.transform.position.x + side * 4.2f;
+                supportProgress = Mathf.Min(carrierProgress + 7.5f, forwardLimit);
+            }
+            else if (player.ShirtNumber >= 6)
+            {
+                // Midfielders form short diagonal passing options around the carrier.
+                supportX = carrier.transform.position.x + side * (player.ShirtNumber % 2 == 0 ? 5.0f : -4.5f);
+                supportProgress = carrierProgress + (player.ShirtNumber == 8 ? 4.0f : -2.5f);
+            }
+            else
+            {
+                // Defenders stay behind the ball and provide a safe recycle option.
+                supportX = Mathf.Lerp(home.x, carrier.transform.position.x, 0.42f);
+                supportProgress = carrierProgress - 6.0f;
+            }
+
+            supportX = Mathf.Clamp(supportX, -15.5f, 15.5f);
+            supportProgress = Mathf.Clamp(supportProgress, -25f, 25f);
+            return new Vector3(supportX, player.transform.position.y, attackDirection * supportProgress);
         }
 
         private float FindDefensiveLineProgress()
