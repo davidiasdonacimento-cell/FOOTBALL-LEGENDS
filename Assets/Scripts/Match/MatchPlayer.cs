@@ -116,6 +116,10 @@ namespace FootballLegends.Match
             rightLeg.localRotation = Quaternion.Euler(-swing, 0f, 0f);
             leftArm.localRotation = Quaternion.Euler(-swing * 0.7f, 0f, 0f);
             rightArm.localRotation = Quaternion.Euler(swing * 0.7f, 0f, 0f);
+            if (speed <= 0.2f)
+                head.localRotation = Quaternion.Euler(0f, Mathf.Sin(Time.time * 1.4f) * 18f, 0f);
+            else
+                head.localRotation = Quaternion.Slerp(head.localRotation, Quaternion.identity, Time.deltaTime * 5f);
             mouth.localScale = new Vector3(0.10f, 0.025f, 0.018f);
         }
 
