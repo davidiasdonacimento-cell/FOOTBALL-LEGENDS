@@ -76,7 +76,7 @@ namespace FootballLegends.Editor
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         }
 
-        private static AndroidSdkVersions Android最低Sdk()
+        private static AndroidSdkVersions GetMinimumAndroidSdkVersion()
         {
             return AndroidSdkVersions.AndroidApiLevel26;
         }
