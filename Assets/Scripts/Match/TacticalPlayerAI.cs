@@ -84,6 +84,15 @@ namespace FootballLegends.Match
             bool opponentHasPossession = opponentDistance < 2.5f &&
                 opponentDistance < ownDistance - 0.2f;
 
+            MatchTacticsDirector director = MatchTacticsDirector.Instance;
+            if (director != null)
+            {
+                MatchTacticsDirector.TacticalPhase phase = director.GetPhase(player.TeamId);
+                teamHasPossession = phase == MatchTacticsDirector.TacticalPhase.Attacking ||
+                    phase == MatchTacticsDirector.TacticalPhase.CounterAttack;
+                opponentHasPossession = phase == MatchTacticsDirector.TacticalPhase.Defending;
+            }
+
             carryingBall = false;
             moveSpeed = 4.25f;
             facingTarget = ballPosition;
@@ -116,7 +125,9 @@ namespace FootballLegends.Match
             }
             else if (opponentHasPossession)
             {
-                int pressRank = GetRankByDistance(teammates, ballPosition, player);
+                int pressRank = MatchTacticsDirector.Instance != null
+                    ? MatchTacticsDirector.Instance.GetPressRank(player.TeamId, player, ballPosition)
+                    : GetRankByDistance(teammates, ballPosition, player);
                 if (pressRank == 1)
                 {
                     target = ballPosition + Vector3.forward * -attackDirection * 0.9f;
