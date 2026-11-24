@@ -176,6 +176,8 @@ namespace FootballLegends.Match
 
         private void ConfigureTacticalAI()
         {
+            MatchTacticsDirector director = gameObject.AddComponent<MatchTacticsDirector>();
+            director.Configure(teamA, teamB, ball.transform);
             ConfigureTeamAI(teamA, teamB, 1);
             ConfigureTeamAI(teamB, teamA, -1);
         }
