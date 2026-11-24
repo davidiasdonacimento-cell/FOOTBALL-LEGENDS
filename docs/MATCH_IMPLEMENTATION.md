@@ -107,3 +107,13 @@ Os atletas atuais são personagens procedurais compostos por primitivas 3D, com 
 - Ao escolher um passe, a IA dá preferência moderada ao atleta controlado quando ele está elegível, desmarcado, em posição legal e com corredor de passe aceitável. A preferência não força passes bloqueados ou impedidos.
 - A referência do jogador é atualizada ao selecionar o atleta antes do início e durante a partida.
 - **Limite:** esta é coordenação determinística por regras e distâncias. Ainda requer compilação Unity, testes de partidas e ajuste de pesos/posicionamento; não é IA treinada nem validação de nível profissional.
+
+
+## Combinações ofensivas e jogadas ensaiadas
+
+- **Tabelas (um-dois):** os companheiros próximos oferecem apoio curto e diagonal. Depois de receber, a IA mantém preferência por devolver a bola ao atleta controlado quando ele estiver livre, em posição legal e com corredor de passe viável.
+- **Triangulações:** os meio-campistas 6, 7 e 8 formam vértices em alturas diferentes: cobertura atrás, apoio lateral curto e opção diagonal à frente.
+- **Ultrapassagens:** os laterais 2 e 5 avançam por fora para oferecer amplitude. A corrida é limitada pela linha defensiva para reduzir risco de impedimento.
+- **Jogada ensaiada:** o botão JOGADA ativa por 6,5 segundos um padrão coordenado com laterais em ultrapassagem, meio-campo em triângulo e atacantes atacando canais. Só pode ser ativado quando o atleta controlado está próximo da bola.
+- **Passe inteligente:** a seleção considera distância, progressão, pressão adversária, corredor de passe e impedimento; a preferência pelo jogador controlado não supera uma linha bloqueada ou posição irregular.
+- **Limite:** padrões determinísticos baseados em regras, não movimentos coreografados com animações profissionais. Ainda requer compilação Unity, testes de gameplay e balanceamento em partidas reais.
