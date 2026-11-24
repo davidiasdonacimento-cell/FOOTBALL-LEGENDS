@@ -456,7 +456,9 @@ namespace FootballLegends.Match
             if (selectedRefereePlayer == null || selectedRefereePlayer.IsSentOff) return;
             selectedRefereePlayer.ReceiveCard(false);
             ShowComplaint("AH, FUI ROUBADO! VOCÊ TÁ DE BRINCADEIRA?");
-            SetStatus("ÁRBITRO: CARTÃO AMARELO APLICADO");
+            SetStatus(selectedRefereePlayer.IsSentOff
+                ? "ÁRBITRO: SEGUNDO AMARELO • JOGADOR EXPULSO"
+                : "ÁRBITRO: CARTÃO AMARELO APLICADO");
         }
 
         private void GiveRedCard()
