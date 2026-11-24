@@ -18,6 +18,8 @@ namespace FootballLegends.Match
         private float lookUntil;
         private Vector3 lookDirection = Vector3.forward;
         private Renderer shirtRenderer;
+        private GameObject cardVisual;
+        private float cardUntil;
 
         public void Initialize(int teamId, int shirtNumber, bool goalkeeper = false)
         {
@@ -133,8 +135,17 @@ namespace FootballLegends.Match
             }
             IsComplaining = true;
             complaintUntil = Time.time + 3.8f;
-            if (shirtRenderer != null)
-                shirtRenderer.material.color = red ? new Color(0.45f, 0.12f, 0.12f) : new Color(0.88f, 0.72f, 0.08f);
+            if (cardVisual != null) Destroy(cardVisual);
+            cardVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cardVisual.name = red ? "Red Card Visual" : "Yellow Card Visual";
+            cardVisual.transform.SetParent(transform, false);
+            cardVisual.transform.localPosition = new Vector3(0.42f, 1.15f, 0.05f);
+            cardVisual.transform.localScale = new Vector3(0.025f, 0.34f, 0.22f);
+            Collider cardCollider = cardVisual.GetComponent<Collider>();
+            if (cardCollider != null) Destroy(cardCollider);
+            Renderer cardRenderer = cardVisual.GetComponent<Renderer>();
+            cardRenderer.material.color = red ? Color.red : Color.yellow;
+            cardUntil = Time.time + 3.8f;
         }
 
         public void TriggerComplaint()
@@ -145,6 +156,11 @@ namespace FootballLegends.Match
 
         private void Update()
         {
+            if (cardVisual != null)
+            {
+                cardVisual.transform.localRotation = Quaternion.Euler(0f, Mathf.Sin(Time.time * 2f) * 10f, 0f);
+                if (Time.time >= cardUntil) Destroy(cardVisual);
+            }
             if (IsComplaining)
             {
                 UpdateAnimation(0f);
