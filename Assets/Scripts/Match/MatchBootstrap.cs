@@ -315,6 +315,8 @@ namespace FootballLegends.Match
                 if (refereeMode)
                 {
                     matchStopped = true;
+                    ballBody.velocity = Vector3.zero;
+                    ballBody.isKinematic = true;
                     SetStatus("LANCE EM ANÁLISE • POSSÍVEL IMPEDIMENTO");
                 }
                 else SetStatus("IMPEDIMENTO • PASSE CANCELADO");
@@ -355,7 +357,7 @@ namespace FootballLegends.Match
 
         private void CheckGoal()
         {
-            if (ball.transform.position.y > 2.7f || Mathf.Abs(ball.transform.position.x) > 3.6f) return;
+            if (ball.transform.position.y > 2.25f || Mathf.Abs(ball.transform.position.x) > 3.6f) return;
             if (ball.transform.position.z > 29.2f) AwardGoal(0);
             else if (ball.transform.position.z < -29.2f) AwardGoal(1);
         }
@@ -366,11 +368,14 @@ namespace FootballLegends.Match
             if (scoreText != null) scoreText.text = "AZUL  " + scoreA + "  -  " + scoreB + "  VERMELHO";
             SetStatus(team == 0 ? "GOOOOOOL DO TIME AZUL!" : "GOOOOOOL DO TIME VERMELHO!");
             matchStopped = true;
+            ballBody.velocity = Vector3.zero;
+            ballBody.isKinematic = true;
             Invoke(nameof(RestartAfterGoal), 2f);
         }
 
         private void RestartAfterGoal()
         {
+            ballBody.isKinematic = false;
             ballBody.velocity = Vector3.zero;
             ballBody.angularVelocity = Vector3.zero;
             ball.transform.position = new Vector3(0f, 0.55f, 0f);
@@ -458,8 +463,20 @@ namespace FootballLegends.Match
             complaintMessageUntil = Time.time + 3.8f;
         }
 
-        private void StopMatch() { matchStopped = true; SetStatus("ÁRBITRO: PARTIDA PARADA"); }
-        private void ResumeMatch() { matchStopped = false; SetStatus("ÁRBITRO: PARTIDA RETOMADA"); }
+        private void StopMatch()
+        {
+            matchStopped = true;
+            ballBody.velocity = Vector3.zero;
+            ballBody.isKinematic = true;
+            SetStatus("ÁRBITRO: PARTIDA PARADA");
+        }
+
+        private void ResumeMatch()
+        {
+            ballBody.isKinematic = false;
+            matchStopped = false;
+            SetStatus("ÁRBITRO: PARTIDA RETOMADA");
+        }
 
         private void PassBall()
         {
@@ -533,7 +550,7 @@ namespace FootballLegends.Match
                 SetStatus("APROXIME-SE DO ADVERSÁRIO PARA DESARMAR");
             }
         }
-        private void TogglePause() { matchStopped = !matchStopped; SetStatus(matchStopped ? "PARTIDA PAUSADA" : "PARTIDA RETOMADA"); }
+        private void TogglePause() { if (matchStopped) ResumeMatch(); else StopMatch(); }
 
         private void ReturnToLobby()
         {
