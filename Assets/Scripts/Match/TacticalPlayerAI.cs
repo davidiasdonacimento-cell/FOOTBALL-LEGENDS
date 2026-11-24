@@ -85,7 +85,7 @@ namespace FootballLegends.Match
             {
                 ballBody.velocity = Vector3.zero;
                 ballBody.angularVelocity = Vector3.zero;
-                ball.position = player.transform.position + Vector3.forward * attackDirection * 0.95f + Vector3.up * 0.28f;
+                ball.position = new Vector3(player.transform.position.x, 0.35f, player.transform.position.z + attackDirection * 0.95f);
                 player.Face(player.transform.position + Vector3.forward * attackDirection);
             }
             else player.Face(ballPos);
