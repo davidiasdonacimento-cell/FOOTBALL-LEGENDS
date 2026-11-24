@@ -123,12 +123,20 @@ namespace FootballLegends.Lobby
             Text description = MakeText(content.transform, "", 24,
                 new Vector2(0.5f, 0.48f), new Vector2(0.82f, 0.24f),
                 TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.95f));
+            Button playMatch = CreateButton(content.transform, "JOGAR PARTIDA",
+                new Vector2(0.5f, 0.38f), new Vector2(0.38f, 0.11f));
+            playMatch.onClick.AddListener(controller.StartPlayerMatch);
+            Button refereeMatch = CreateButton(content.transform, "SER ÁRBITRO • IA x IA",
+                new Vector2(0.5f, 0.23f), new Vector2(0.38f, 0.11f));
+            refereeMatch.onClick.AddListener(controller.StartRefereeMatch);
             Button back = CreateButton(content.transform, "VOLTAR",
-                new Vector2(0.5f, 0.19f), new Vector2(0.30f, 0.12f));
-            back.onClick.AddListener(controller.ReturnToLobby);
+                new Vector2(0.5f, 0.08f), new Vector2(0.30f, 0.10f));
 
             content.SetActive(false);
-            controller.Initialize(home, content, title, description);
+            playMatch.gameObject.SetActive(false);
+            refereeMatch.gameObject.SetActive(false);
+            back.onClick.AddListener(controller.ReturnToLobby);
+            controller.Initialize(home, content, title, description, playMatch.gameObject, refereeMatch.gameObject);
         }
 
         private GameObject MakePanel(Transform parent, string panelName,
