@@ -152,7 +152,11 @@ namespace FootballLegends.Match
                 target = userPlayerHasBall
                     ? SupportControlledCarrier(userPlayer, ballPosition)
                     : AttackingSupportTarget(ballPosition);
-                moveSpeed = player.ShirtNumber >= 9 ? 4.95f : 4.5f;
+                bool coordinatedPlay = director != null && director.IsAttackingPatternActive(player.TeamId);
+                moveSpeed = coordinatedPlay
+                    ? ((player.ShirtNumber == 2 || player.ShirtNumber == 5) ? 5.25f :
+                        (player.ShirtNumber >= 9 ? 5.1f : 4.65f))
+                    : (player.ShirtNumber >= 9 ? 4.95f : 4.5f);
                 facingTarget = userPlayerHasBall ? userPlayer.transform.position : ballPosition;
             }
             else
