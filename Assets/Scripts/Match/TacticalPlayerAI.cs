@@ -28,7 +28,7 @@ namespace FootballLegends.Match
 
         private void Update()
         {
-            if (player == null || player.IsSentOff || player.IsComplaining || ball == null) return;
+            if (MatchBootstrap.SimulationPaused || player == null || player.IsSentOff || player.IsComplaining || ball == null) return;
             thinkTimer -= Time.deltaTime;
             if (thinkTimer > 0f) return;
             thinkTimer = Random.Range(0.12f, 0.24f);
