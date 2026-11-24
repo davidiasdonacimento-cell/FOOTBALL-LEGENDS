@@ -24,6 +24,7 @@ jobs:
           targetPlatform: Android
           unityVersion: auto
           buildName: FOOTBALL-LEGENDS
+          buildMethod: FootballLegends.Editor.ProjectSetup.BuildAndroid
           buildsPath: build
           androidExportType: androidPackage
           allowDirtyBuild: true
