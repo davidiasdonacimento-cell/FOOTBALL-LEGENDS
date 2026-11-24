@@ -315,6 +315,10 @@ namespace FootballLegends.Match
 
         private Vector3 SupportControlledCarrier(MatchPlayer carrier, Vector3 ballPosition)
         {
+            MatchTacticsDirector director = MatchTacticsDirector.Instance;
+            if (director != null && director.IsAttackingPatternActive(player.TeamId))
+                return SetPlaySupportTarget(carrier);
+
             float side = Mathf.Sign(home.x);
             if (Mathf.Abs(side) < 0.1f)
                 side = player.ShirtNumber % 2 == 0 ? -1f : 1f;
@@ -324,21 +328,38 @@ namespace FootballLegends.Match
             float supportX;
             float supportProgress;
 
-            if (player.ShirtNumber >= 9)
+            if (player.ShirtNumber == 6)
             {
-                // Forwards attack the channels ahead of the user, but stay onside.
-                supportX = carrier.transform.position.x + side * 4.2f;
-                supportProgress = Mathf.Min(carrierProgress + 7.5f, forwardLimit);
+                // Deep midfielder offers the safe vertex of a passing triangle.
+                supportX = Mathf.Lerp(home.x, carrier.transform.position.x, 0.45f);
+                supportProgress = carrierProgress - 5.0f;
             }
-            else if (player.ShirtNumber >= 6)
+            else if (player.ShirtNumber == 7)
             {
-                // Midfielders form short diagonal passing options around the carrier.
-                supportX = carrier.transform.position.x + side * (player.ShirtNumber % 2 == 0 ? 5.0f : -4.5f);
-                supportProgress = carrierProgress + (player.ShirtNumber == 8 ? 4.0f : -2.5f);
+                // One midfielder stays close and wide as the short wall-pass option.
+                supportX = carrier.transform.position.x + side * 5.0f;
+                supportProgress = carrierProgress - 1.0f;
+            }
+            else if (player.ShirtNumber == 8)
+            {
+                // The other midfielder attacks the diagonal space beyond the carrier.
+                supportX = carrier.transform.position.x - side * 4.2f;
+                supportProgress = Mathf.Min(carrierProgress + 4.5f, forwardLimit);
+            }
+            else if (player.ShirtNumber == 2 || player.ShirtNumber == 5)
+            {
+                // Fullbacks hold width and are ready to overlap outside the winger.
+                float flank = player.ShirtNumber == 2 ? -1f : 1f;
+                supportX = Mathf.Clamp(carrier.transform.position.x + flank * 7.0f, -15.5f, 15.5f);
+                supportProgress = Mathf.Min(carrierProgress + 1.5f, forwardLimit);
+            }
+            else if (player.ShirtNumber >= 9)
+            {
+                supportX = carrier.transform.position.x + side * 4.2f;
+                supportProgress = Mathf.Min(carrierProgress + 7.0f, forwardLimit);
             }
             else
             {
-                // Defenders stay behind the ball and provide a safe recycle option.
                 supportX = Mathf.Lerp(home.x, carrier.transform.position.x, 0.42f);
                 supportProgress = carrierProgress - 6.0f;
             }
@@ -346,6 +367,55 @@ namespace FootballLegends.Match
             supportX = Mathf.Clamp(supportX, -15.5f, 15.5f);
             supportProgress = Mathf.Clamp(supportProgress, -25f, 25f);
             return new Vector3(supportX, player.transform.position.y, attackDirection * supportProgress);
+        }
+
+        private Vector3 SetPlaySupportTarget(MatchPlayer carrier)
+        {
+            float carrierProgress = attackDirection * carrier.transform.position.z;
+            float onsideLimit = Mathf.Min(FindDefensiveLineProgress() - 2.2f, 25f);
+            float side = Mathf.Sign(home.x);
+            if (Mathf.Abs(side) < 0.1f) side = player.ShirtNumber % 2 == 0 ? -1f : 1f;
+            float x;
+            float progress;
+
+            if (player.ShirtNumber == 2 || player.ShirtNumber == 5)
+            {
+                // Outside overlap: fullback accelerates beyond the wide attacker.
+                float flank = player.ShirtNumber == 2 ? -1f : 1f;
+                x = carrier.transform.position.x + flank * 8.0f;
+                progress = Mathf.Min(carrierProgress + 6.0f, onsideLimit);
+                moveSpeed = 5.25f;
+            }
+            else if (player.ShirtNumber == 6)
+            {
+                x = carrier.transform.position.x - side * 4.5f;
+                progress = carrierProgress - 4.5f;
+            }
+            else if (player.ShirtNumber == 7)
+            {
+                x = carrier.transform.position.x + side * 4.5f;
+                progress = carrierProgress - 0.8f;
+            }
+            else if (player.ShirtNumber == 8)
+            {
+                x = carrier.transform.position.x - side * 3.5f;
+                progress = Mathf.Min(carrierProgress + 5.5f, onsideLimit);
+                moveSpeed = 5.0f;
+            }
+            else if (player.ShirtNumber >= 9)
+            {
+                x = carrier.transform.position.x + side * (player.ShirtNumber == 10 ? -5.5f : 5.5f);
+                progress = Mathf.Min(carrierProgress + (player.ShirtNumber == 9 ? 9.0f : 6.5f), onsideLimit);
+                moveSpeed = 5.1f;
+            }
+            else
+            {
+                x = Mathf.Lerp(home.x, carrier.transform.position.x, 0.35f);
+                progress = carrierProgress - 6.5f;
+            }
+
+            return new Vector3(Mathf.Clamp(x, -15.5f, 15.5f), player.transform.position.y,
+                attackDirection * Mathf.Clamp(progress, -25f, 25f));
         }
 
         private float FindDefensiveLineProgress()
