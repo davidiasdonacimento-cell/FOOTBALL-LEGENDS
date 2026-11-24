@@ -434,8 +434,37 @@ namespace FootballLegends.Match
         private void CreateChildButton(Transform parent, string label, Vector2 anchor,
             UnityEngine.Events.UnityAction action)
         {
-            GameObject obj = CreateButtonObject(parent, label, anchor, new Vector2(0.43f, 0.58f));
-            obj.GetComponent<Button>().onClick.AddListener(action);
+            GameObject obj = new GameObject(label + " Button",
+                typeof(RectTransform), typeof(Image), typeof(Button));
+            obj.transform.SetParent(parent, false);
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = anchor;
+            rect.sizeDelta = new Vector2(310f, 112f);
+            obj.GetComponent<Image>().color = new Color(0.04f, 0.31f, 0.55f, 0.96f);
+            Button button = obj.GetComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(0.10f, 0.52f, 0.78f);
+            colors.pressedColor = new Color(0.02f, 0.18f, 0.32f);
+            button.colors = colors;
+            button.onClick.AddListener(action);
+
+            GameObject labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            labelObject.transform.SetParent(obj.transform, false);
+            RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(8f, 6f);
+            labelRect.offsetMax = new Vector2(-8f, -6f);
+            Text labelText = labelObject.GetComponent<Text>();
+            labelText.font = uiFont;
+            labelText.text = label;
+            labelText.fontSize = 21;
+            labelText.alignment = TextAnchor.MiddleCenter;
+            labelText.color = Color.white;
+            labelText.resizeTextForBestFit = true;
+            labelText.resizeTextMinSize = 13;
+            labelText.resizeTextMaxSize = 21;
+            labelText.raycastTarget = false;
         }
 
         private GameObject CreateButtonObject(Transform parent, string label, Vector2 anchor, Vector2 size)
