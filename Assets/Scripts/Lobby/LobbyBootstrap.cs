@@ -84,7 +84,7 @@ namespace FootballLegends.Lobby
 
         private void BuildInterface()
         {
-            uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             GameObject canvasObject = new GameObject("Lobby Canvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -121,7 +121,7 @@ namespace FootballLegends.Lobby
                 new Vector2(0.5f, 0.76f), new Vector2(0.85f, 0.18f),
                 TextAnchor.MiddleCenter, Color.white);
             Text description = MakeText(content.transform, "", 24,
-                new Vector2(0.5f, 0.48f), new Vector2(0.82f, 0.24f),
+                new Vector2(0.5f, 0.57f), new Vector2(0.82f, 0.14f),
                 TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.95f));
             Button playMatch = CreateButton(content.transform, "JOGAR PARTIDA",
                 new Vector2(0.5f, 0.38f), new Vector2(0.38f, 0.11f));
