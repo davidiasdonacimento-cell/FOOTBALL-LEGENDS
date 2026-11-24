@@ -30,6 +30,11 @@ namespace FootballLegends.Match
         private float lineTimer;
         private float sprintUntil;
         private Font uiFont;
+        private int refereeSelection;
+        private MatchPlayer selectedRefereePlayer;
+        private Text selectedPlayerText;
+        private Text complaintText;
+        private float complaintMessageUntil;
 
         private void Awake()
         {
@@ -40,8 +45,10 @@ namespace FootballLegends.Match
             BuildPitch();
             BuildTeams();
             BuildBall();
+            ConfigureTacticalAI();
             BuildCamera();
             BuildInterface();
+            SelectRefereePlayer(0);
             SetStatus(refereeMode ? "MODO ÁRBITRO • IA x IA" : "PARTIDA • CONTROLE DO JOGADOR");
         }
 
@@ -53,13 +60,22 @@ namespace FootballLegends.Match
                 return;
             }
 
-            if (refereeMode) UpdateAiMatch();
-            else UpdatePlayerControls();
+            UpdatePlayerControls();
+            UpdateAiMatch();
+            CheckGoal();
+            CheckGoalkeeperSave();
 
             if (lineTimer > 0f)
             {
                 lineTimer -= Time.deltaTime;
                 if (lineTimer <= 0f && offsideLine != null) offsideLine.enabled = false;
+            }
+            if (complaintText != null && Time.time >= complaintMessageUntil) complaintText.text = "";
+            for (int i = 0; i < players.Count; i++)
+            {
+                MatchPlayer p = players[i];
+                if (p != null && !p.IsSentOff && p == controlledPlayer)
+                    p.UpdateAnimation(joystick != null && joystick.Value.sqrMagnitude > 0.04f ? 1f : 0f);
             }
         }
 
@@ -133,11 +149,9 @@ namespace FootballLegends.Match
 
         private MatchPlayer CreatePlayer(int team, int number, Vector3 position, Color color)
         {
-            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            model.name = (team == 0 ? "Blue" : "Red") + " Player " + number;
+            GameObject model = new GameObject((team == 0 ? "Blue" : "Red") + " Player " + number);
             model.transform.position = position;
-            model.transform.localScale = new Vector3(0.78f, 0.9f, 0.78f);
-            SetColor(model, color);
+            model.AddComponent<CapsuleCollider>();
             MatchPlayer player = model.AddComponent<MatchPlayer>();
             player.Initialize(team, number, number == 1);
             players.Add(player);
@@ -156,6 +170,22 @@ namespace FootballLegends.Match
             ballBody.drag = 0.35f;
             ballBody.angularDrag = 0.08f;
             ballBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        }
+
+        private void ConfigureTacticalAI()
+        {
+            ConfigureTeamAI(teamA, teamB, 1);
+            ConfigureTeamAI(teamB, teamA, -1);
+        }
+
+        private void ConfigureTeamAI(List<MatchPlayer> own, List<MatchPlayer> opposition, int direction)
+        {
+            foreach (MatchPlayer p in own)
+            {
+                TacticalPlayerAI ai = p.gameObject.AddComponent<TacticalPlayerAI>();
+                ai.Configure(p, own, opposition, ball.transform, direction, p.transform.position);
+                if (!refereeMode && p == controlledPlayer) ai.enabled = false;
+            }
         }
 
         private void BuildCamera()
@@ -190,6 +220,7 @@ namespace FootballLegends.Match
 
             scoreText = MakeText(canvas.transform, "0  -  0", 34, new Vector2(0.5f, 0.94f), new Vector2(0.25f, 0.08f), TextAnchor.MiddleCenter);
             statusText = MakeText(canvas.transform, "", 22, new Vector2(0.5f, 0.84f), new Vector2(0.65f, 0.06f), TextAnchor.MiddleCenter);
+            complaintText = MakeText(canvas.transform, "", 24, new Vector2(0.5f, 0.76f), new Vector2(0.72f, 0.06f), TextAnchor.MiddleCenter);
 
             if (!refereeMode)
             {
@@ -207,11 +238,19 @@ namespace FootballLegends.Match
                 refereePanel.transform.SetParent(canvas.transform, false);
                 RectTransform panelRect = refereePanel.GetComponent<RectTransform>();
                 panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.22f);
-                panelRect.sizeDelta = new Vector2(760f, 210f);
+                panelRect.sizeDelta = new Vector2(1120f, 300f);
                 refereePanel.GetComponent<Image>().color = new Color(0.02f, 0.04f, 0.08f, 0.95f);
-                CreateChildButton(refereePanel.transform, "MARCAR IMPEDIMENTO", new Vector2(0.28f, 0.5f), ConfirmOffside);
-                CreateChildButton(refereePanel.transform, "DEIXAR SEGUIR", new Vector2(0.72f, 0.5f), PlayOn);
-                refereePanel.SetActive(false);
+                selectedPlayerText = MakeText(refereePanel.transform, "JOGADOR SELECIONADO", 20,
+                    new Vector2(0.5f, 0.88f), new Vector2(0.9f, 0.18f), TextAnchor.MiddleCenter);
+                CreateChildButton(refereePanel.transform, "< JOGADOR", new Vector2(0.14f, 0.62f), SelectPreviousPlayer);
+                CreateChildButton(refereePanel.transform, "PRÓXIMO >", new Vector2(0.38f, 0.62f), SelectNextPlayer);
+                CreateChildButton(refereePanel.transform, "AMARELO", new Vector2(0.64f, 0.62f), GiveYellowCard);
+                CreateChildButton(refereePanel.transform, "VERMELHO", new Vector2(0.87f, 0.62f), GiveRedCard);
+                CreateChildButton(refereePanel.transform, "PARAR JOGO", new Vector2(0.26f, 0.25f), StopMatch);
+                CreateChildButton(refereePanel.transform, "RETOMAR", new Vector2(0.50f, 0.25f), ResumeMatch);
+                CreateChildButton(refereePanel.transform, "IMPEDIMENTO", new Vector2(0.74f, 0.25f), ConfirmOffside);
+                CreateChildButton(refereePanel.transform, "SEGUE", new Vector2(0.92f, 0.25f), PlayOn);
+                refereePanel.SetActive(true);
             }
 
             CreateHudButton(canvas.transform, "SAIR", new Vector2(0.08f, 0.92f), new Vector2(0.12f, 0.08f), ReturnToLobby);
@@ -277,6 +316,104 @@ namespace FootballLegends.Match
             }
         }
 
+        private void UpdateAiMatch()
+        {
+            aiClock += Time.deltaTime;
+            if (aiClock < 1.5f) return;
+            aiClock = 0f;
+            MatchPlayer owner = FindClosestActivePlayer(ball.transform.position);
+            if (owner == null || Vector3.Distance(owner.transform.position, ball.transform.position) > 3.4f) return;
+            List<MatchPlayer> own = owner.TeamId == 0 ? teamA : teamB;
+            int direction = owner.TeamId == 0 ? 1 : -1;
+            MatchPlayer receiver = FindForwardReceiver(owner, own, direction);
+            if (receiver == null) return;
+            OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, owner.TeamId, direction);
+            ShowOffsideLine(result.LineZ, result.IsOffside);
+            if (result.IsOffside)
+            {
+                if (refereeMode)
+                {
+                    matchStopped = true;
+                    SetStatus("LANCE EM ANÁLISE • POSSÍVEL IMPEDIMENTO");
+                }
+                else SetStatus("IMPEDIMENTO • PASSE CANCELADO");
+                return;
+            }
+            Vector3 directionToReceiver = (receiver.transform.position - ball.transform.position).normalized;
+            ballBody.velocity = Vector3.zero;
+            ballBody.AddForce(directionToReceiver * 10.5f + Vector3.up * 1.1f, ForceMode.Impulse);
+            owner.Face(receiver.transform.position);
+        }
+
+        private MatchPlayer FindClosestActivePlayer(Vector3 position)
+        {
+            MatchPlayer best = null;
+            float bestDistance = float.MaxValue;
+            foreach (MatchPlayer p in players)
+            {
+                if (p == null || p.IsSentOff || p.IsComplaining) continue;
+                float d = (p.transform.position - position).sqrMagnitude;
+                if (d < bestDistance) { bestDistance = d; best = p; }
+            }
+            return best;
+        }
+
+        private MatchPlayer FindForwardReceiver(MatchPlayer owner, List<MatchPlayer> own, int direction)
+        {
+            MatchPlayer best = null;
+            float bestProgress = float.MinValue;
+            foreach (MatchPlayer p in own)
+            {
+                if (p == null || p == owner || p.IsSentOff || p.IsGoalkeeper) continue;
+                float progress = direction * p.transform.position.z;
+                if (progress > bestProgress && Vector3.Distance(p.transform.position, owner.transform.position) > 3f)
+                { bestProgress = progress; best = p; }
+            }
+            return best;
+        }
+
+        private void CheckGoal()
+        {
+            if (ball.transform.position.y > 2.7f || Mathf.Abs(ball.transform.position.x) > 3.6f) return;
+            if (ball.transform.position.z > 29.2f) AwardGoal(0);
+            else if (ball.transform.position.z < -29.2f) AwardGoal(1);
+        }
+
+        private void AwardGoal(int team)
+        {
+            if (team == 0) scoreA++; else scoreB++;
+            if (scoreText != null) scoreText.text = "AZUL  " + scoreA + "  -  " + scoreB + "  VERMELHO";
+            SetStatus(team == 0 ? "GOOOOOOL DO TIME AZUL!" : "GOOOOOOL DO TIME VERMELHO!");
+            matchStopped = true;
+            Invoke(nameof(RestartAfterGoal), 2f);
+        }
+
+        private void RestartAfterGoal()
+        {
+            ballBody.velocity = Vector3.zero;
+            ballBody.angularVelocity = Vector3.zero;
+            ball.transform.position = new Vector3(0f, 0.55f, 0f);
+            matchStopped = false;
+        }
+
+        private void CheckGoalkeeperSave()
+        {
+            if (ballBody.velocity.sqrMagnitude < 0.2f) return;
+            foreach (MatchPlayer keeper in players)
+            {
+                if (keeper == null || !keeper.IsGoalkeeper || keeper.IsSentOff) continue;
+                if (Vector3.Distance(keeper.transform.position, ball.transform.position) < 1.3f &&
+                    Mathf.Abs(ball.transform.position.z) > 21f)
+                {
+                    ballBody.velocity = Vector3.zero;
+                    ballBody.angularVelocity = Vector3.zero;
+                    ball.transform.position = keeper.transform.position + new Vector3(0f, 0.2f, keeper.TeamId == 0 ? 0.8f : -0.8f);
+                    SetStatus("DEFESA DO GOLEIRO!");
+                    break;
+                }
+            }
+        }
+
         private void ShowOffsideLine(float z, bool flagged)
         {
             if (offsideLine == null) return;
@@ -303,6 +440,45 @@ namespace FootballLegends.Match
             SetStatus("ÁRBITRO: SEGUE O JOGO");
             if (offsideLine != null) offsideLine.enabled = false;
         }
+
+        private void SelectPreviousPlayer() { SelectRefereePlayer(-1); }
+        private void SelectNextPlayer() { SelectRefereePlayer(1); }
+
+        private void SelectRefereePlayer(int step)
+        {
+            if (players.Count == 0) return;
+            refereeSelection = (refereeSelection + step + players.Count) % players.Count;
+            selectedRefereePlayer = players[refereeSelection];
+            if (selectedPlayerText != null)
+                selectedPlayerText.text = (selectedRefereePlayer.TeamId == 0 ? "AZUL" : "VERMELHO") +
+                    " • CAMISA " + selectedRefereePlayer.ShirtNumber +
+                    (selectedRefereePlayer.IsSentOff ? " • EXPULSO" : "");
+        }
+
+        private void GiveYellowCard()
+        {
+            if (selectedRefereePlayer == null || selectedRefereePlayer.IsSentOff) return;
+            selectedRefereePlayer.ReceiveCard(false);
+            ShowComplaint("AH, FUI ROUBADO! VOCÊ TÁ DE BRINCADEIRA?");
+            SetStatus("ÁRBITRO: CARTÃO AMARELO APLICADO");
+        }
+
+        private void GiveRedCard()
+        {
+            if (selectedRefereePlayer == null || selectedRefereePlayer.IsSentOff) return;
+            selectedRefereePlayer.ReceiveCard(true);
+            ShowComplaint("ISSO É INJUSTO! EU NÃO FIZ NADA!");
+            SetStatus("ÁRBITRO: CARTÃO VERMELHO • EXPULSO");
+        }
+
+        private void ShowComplaint(string line)
+        {
+            if (complaintText != null) complaintText.text = line;
+            complaintMessageUntil = Time.time + 3.8f;
+        }
+
+        private void StopMatch() { matchStopped = true; SetStatus("ÁRBITRO: PARTIDA PARADA"); }
+        private void ResumeMatch() { matchStopped = false; SetStatus("ÁRBITRO: PARTIDA RETOMADA"); }
 
         private void PassBall()
         {
@@ -338,8 +514,21 @@ namespace FootballLegends.Match
         private void SwitchPlayer()
         {
             int index = teamA.IndexOf(controlledPlayer);
-            controlledPlayer = teamA[(index + 1) % teamA.Count];
-            SetStatus("JOGADOR " + controlledPlayer.ShirtNumber + " SELECIONADO");
+            for (int i = 1; i <= teamA.Count; i++)
+            {
+                MatchPlayer candidate = teamA[(index + i) % teamA.Count];
+                if (candidate == null || candidate.IsSentOff) continue;
+                if (controlledPlayer != null)
+                {
+                    TacticalPlayerAI oldAi = controlledPlayer.GetComponent<TacticalPlayerAI>();
+                    if (oldAi != null) oldAi.enabled = true;
+                }
+                controlledPlayer = candidate;
+                TacticalPlayerAI newAi = controlledPlayer.GetComponent<TacticalPlayerAI>();
+                if (newAi != null) newAi.enabled = false;
+                SetStatus("JOGADOR " + controlledPlayer.ShirtNumber + " SELECIONADO");
+                return;
+            }
         }
 
         private void Tackle()
