@@ -36,14 +36,17 @@ namespace FootballLegends.Match
         private Text selectedPlayerText;
         private Text complaintText;
         private float complaintMessageUntil;
+        private GameObject playerSelectionPanel;
+        private Text playerSelectionText;
+        private int selectedPlayerIndex = 7;
 
         private void Awake()
         {
             Screen.orientation = ScreenOrientation.LandscapeLeft;
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 0;
-            SimulationPaused = false;
             refereeMode = PlayerPrefs.GetInt("FL_MATCH_MODE", 0) == 1;
+            SimulationPaused = !refereeMode;
             BuildPitch();
             BuildTeams();
             BuildBall();
@@ -146,7 +149,8 @@ namespace FootballLegends.Match
                 teamA.Add(CreatePlayer(0, i + 1, formationA[i], new Color(0.12f, 0.42f, 0.95f)));
                 teamB.Add(CreatePlayer(1, i + 1, formationB[i], new Color(0.9f, 0.16f, 0.12f)));
             }
-            controlledPlayer = teamA[7];
+            selectedPlayerIndex = 7;
+            controlledPlayer = teamA[selectedPlayerIndex];
         }
 
         private MatchPlayer CreatePlayer(int team, int number, Vector3 position, Color color)
@@ -234,6 +238,7 @@ namespace FootballLegends.Match
                 CreateHudButton(canvas.transform, "CORRER", new Vector2(0.76f, 0.18f), new Vector2(0.12f, 0.10f), Sprint);
                 CreateHudButton(canvas.transform, "TROCAR", new Vector2(0.73f, 0.34f), new Vector2(0.12f, 0.10f), SwitchPlayer);
                 CreateHudButton(canvas.transform, "DESARMAR", new Vector2(0.87f, 0.55f), new Vector2(0.14f, 0.10f), Tackle);
+                BuildPlayerSelectionPanel(canvas.transform);
             }
             else
             {
@@ -258,6 +263,79 @@ namespace FootballLegends.Match
             }
 
             CreateHudButton(canvas.transform, "SAIR", new Vector2(0.08f, 0.92f), new Vector2(0.12f, 0.08f), ReturnToLobby);
+        }
+
+        private void BuildPlayerSelectionPanel(Transform parent)
+        {
+            playerSelectionPanel = new GameObject("Pre Match Player Selection", typeof(RectTransform), typeof(Image));
+            playerSelectionPanel.transform.SetParent(parent, false);
+            RectTransform panelRect = playerSelectionPanel.GetComponent<RectTransform>();
+            panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.sizeDelta = new Vector2(900f, 360f);
+            playerSelectionPanel.GetComponent<Image>().color = new Color(0.015f, 0.035f, 0.075f, 0.97f);
+
+            MakeText(playerSelectionPanel.transform, "ESCOLHA SEU JOGADOR", 34,
+                new Vector2(0.5f, 0.82f), new Vector2(0.9f, 0.22f), TextAnchor.MiddleCenter);
+            playerSelectionText = MakeText(playerSelectionPanel.transform, "",
+                27, new Vector2(0.5f, 0.53f), new Vector2(0.9f, 0.18f), TextAnchor.MiddleCenter);
+
+            CreateChildButton(playerSelectionPanel.transform, "< ANTERIOR",
+                new Vector2(0.22f, 0.25f), SelectPreviousControlledPlayer);
+            CreateChildButton(playerSelectionPanel.transform, "PRÓXIMO >",
+                new Vector2(0.50f, 0.25f), SelectNextControlledPlayer);
+            CreateChildButton(playerSelectionPanel.transform, "COMEÇAR",
+                new Vector2(0.79f, 0.25f), StartMatch);
+
+            RefreshPlayerSelectionText();
+            playerSelectionPanel.SetActive(true);
+        }
+
+        private void SelectPreviousControlledPlayer()
+        {
+            selectedPlayerIndex = (selectedPlayerIndex - 1 + teamA.Count) % teamA.Count;
+            SetControlledPlayer(teamA[selectedPlayerIndex]);
+        }
+
+        private void SelectNextControlledPlayer()
+        {
+            selectedPlayerIndex = (selectedPlayerIndex + 1) % teamA.Count;
+            SetControlledPlayer(teamA[selectedPlayerIndex]);
+        }
+
+        private void SetControlledPlayer(MatchPlayer nextPlayer)
+        {
+            if (nextPlayer == null || nextPlayer.IsSentOff) return;
+            if (controlledPlayer != null)
+            {
+                TacticalPlayerAI previousAI = controlledPlayer.GetComponent<TacticalPlayerAI>();
+                if (previousAI != null) previousAI.enabled = true;
+            }
+
+            controlledPlayer = nextPlayer;
+            selectedPlayerIndex = teamA.IndexOf(nextPlayer);
+            TacticalPlayerAI selectedAI = controlledPlayer.GetComponent<TacticalPlayerAI>();
+            if (selectedAI != null) selectedAI.enabled = false;
+            RefreshPlayerSelectionText();
+        }
+
+        private void RefreshPlayerSelectionText()
+        {
+            if (playerSelectionText == null || controlledPlayer == null) return;
+            string role = controlledPlayer.IsGoalkeeper ? "GOLEIRO" :
+                controlledPlayer.ShirtNumber <= 5 ? "DEFENSOR" :
+                controlledPlayer.ShirtNumber <= 8 ? "MEIO-CAMPISTA" : "ATACANTE";
+            playerSelectionText.text = "TIME AZUL  •  CAMISA " +
+                controlledPlayer.ShirtNumber + "  •  " + role;
+        }
+
+        private void StartMatch()
+        {
+            if (controlledPlayer == null) return;
+            if (playerSelectionPanel != null) playerSelectionPanel.SetActive(false);
+            matchStopped = false;
+            SimulationPaused = false;
+            SetStatus("PARTIDA INICIADA • VOCÊ CONTROLA A CAMISA " +
+                controlledPlayer.ShirtNumber + " • COMPANHEIROS NA IA");
         }
 
         private void BuildJoystick(Transform parent)
@@ -536,14 +614,7 @@ namespace FootballLegends.Match
             {
                 MatchPlayer candidate = teamA[(index + i) % teamA.Count];
                 if (candidate == null || candidate.IsSentOff) continue;
-                if (controlledPlayer != null)
-                {
-                    TacticalPlayerAI oldAi = controlledPlayer.GetComponent<TacticalPlayerAI>();
-                    if (oldAi != null) oldAi.enabled = true;
-                }
-                controlledPlayer = candidate;
-                TacticalPlayerAI newAi = controlledPlayer.GetComponent<TacticalPlayerAI>();
-                if (newAi != null) newAi.enabled = false;
+                SetControlledPlayer(candidate);
                 SetStatus("JOGADOR " + controlledPlayer.ShirtNumber + " SELECIONADO");
                 return;
             }
