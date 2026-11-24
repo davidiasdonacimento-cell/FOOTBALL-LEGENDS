@@ -2,7 +2,7 @@
 
 ## 1. Visão geral
 
-Aplicação Unity 6 para Android, organizada em módulos com dependências explícitas. A primeira entrega técnica é o lobby; sistemas de partida, física de bola, IA de adversários e multiplayer ficam fora do escopo desta etapa.
+Aplicação Unity 6 para Android, organizada em módulos com dependências explícitas. O projeto contém lobby e uma primeira camada de partida com IA tática baseada em regras, física básica da bola e modo árbitro.
 
 ## 2. Camadas
 
@@ -29,7 +29,7 @@ Aplicação Unity 6 para Android, organizada em módulos com dependências expl�
 - **ProfileSystem**: perfil, nível e progresso.
 - **TeamPreview**: prévia do elenco e formação.
 - **EventSystem**: eventos, desafios e torneios apresentados no lobby.
-- **QuickMatchEntry**: entrada para a futura experiência de partida; durante esta fase, deve indicar claramente se o modo ainda não está disponível.
+- **QuickMatchEntry**: entrada para partida manual ou modo árbitro IA x IA.
 
 ## 3. Fluxo de inicialização
 
@@ -70,6 +70,15 @@ A interface deve usar Canvas Scaler e áreas seguras do Android. O layout será 
 
 GitHub Actions será usado para validar os arquivos e, após configuração da licença Unity e do módulo Android, executar a compilação. Um workflow verde não substitui o teste do APK em aparelho real.
 
-## 8. Limites desta etapa
+## 8. Sistemas de partida
 
-Esta arquitetura descreve o lobby e a base técnica. Não afirma que exista gameplay de futebol, multiplayer, times licenciados ou assets 3D prontos. Esses itens exigem implementação e validação em etapas próprias.
+- **MatchBootstrap**: composição da partida, placar, gols, HUD e fluxo de arbitragem.
+- **MatchPlayer**: atleta procedural, estado disciplinar, movimentação e animações básicas.
+- **TacticalPlayerAI**: posicionamento por formação, aproximação da bola, avanço e recomposição.
+- **OffsideRuleSystem**: avaliação de impedimento no instante do passe.
+- **VirtualJoystick**: entrada de toque para movimentação e condução.
+- **RefereeMode**: seleção de atleta, pausa, cartões livres e decisões de impedimento.
+
+## 9. Limites e validação
+
+A IA tática e as regras implementadas são uma primeira camada jogável, não uma simulação de futebol profissional completa. Os atletas são modelos procedurais provisórios; modelos 3D finais, rig profissional, animações avançadas e áudio ainda precisam ser integrados. A física, a arbitragem e o placar precisam de compilação e testes em aparelho. Multiplayer e licenciamento de clubes/atletas não estão implementados.
