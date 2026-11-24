@@ -4,14 +4,17 @@ Jogo de futebol 3D para Android, desenvolvido com **Unity 6**.
 
 ## Estado atual
 
-- Fase: fundação técnica e lobby inicial.
+- Fase: lobby e primeira camada de gameplay/arbitragem.
 - Plataforma-alvo: Android APK.
 - Orientação: paisagem.
 - Motor: Unity 6.6 (`6000.6.10f1`).
 - Build: GitHub Actions com GameCI.
-- Lobby inicial: cenário de estádio e personagem em blockout, navegação funcional entre painéis.
+- Lobby: navegação funcional e seleção de partida manual ou modo árbitro IA x IA.
+- Partida: IA tática inicial, goleiros procedurais, bola física, detecção de gols e placar.
+- Arbitragem: seleção de qualquer atleta, pausa/retomada, cartões amarelos/vermelhos livres e decisão de impedimento.
+- Animações procedurais básicas: corrida, movimento de cabeça e reclamação com boca/braços e fala na interface.
 
-**Atenção:** o estádio e o personagem atuais são formas temporárias de blockout, não modelos 3D finais. Ainda não existe partida de futebol jogável. O APK ainda não foi compilado nem testado em aparelho.
+**Atenção:** a IA tática atual é inicial e baseada em regras; não representa ainda uma simulação profissional completa. Os atletas são modelos procedurais provisórios, não modelos 3D finais de produção. A compilação Unity e os testes no Android ainda estão pendentes; nenhum APK desta versão foi validado.
 
 ## Documentação
 
