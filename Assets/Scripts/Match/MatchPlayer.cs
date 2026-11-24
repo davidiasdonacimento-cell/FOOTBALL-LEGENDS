@@ -40,8 +40,22 @@ namespace FootballLegends.Match
             shirtRenderer = torso.GetComponent<Renderer>();
             Part("Shorts", PrimitiveType.Cube, new Vector3(0f, -0.30f, 0f),
                 new Vector3(0.43f, 0.23f, 0.28f), new Color(0.08f, 0.09f, 0.12f));
+            Part("Neck", PrimitiveType.Cylinder, new Vector3(0f, 0.48f, 0f),
+                new Vector3(0.10f, 0.13f, 0.10f), new Color(0.66f, 0.46f, 0.34f));
             head = Part("Head", PrimitiveType.Sphere, new Vector3(0f, 0.70f, 0f),
                 new Vector3(0.27f, 0.30f, 0.27f), new Color(0.72f, 0.53f, 0.39f));
+            Part("Hair", PrimitiveType.Sphere, new Vector3(0f, 0.83f, -0.035f),
+                new Vector3(0.28f, 0.13f, 0.28f), new Color(0.10f, 0.075f, 0.055f));
+            Part("Eye L", PrimitiveType.Sphere, new Vector3(-0.075f, 0.73f, 0.235f),
+                new Vector3(0.035f, 0.035f, 0.02f), Color.white);
+            Part("Eye R", PrimitiveType.Sphere, new Vector3(0.075f, 0.73f, 0.235f),
+                new Vector3(0.035f, 0.035f, 0.02f), Color.white);
+            Part("Pupil L", PrimitiveType.Sphere, new Vector3(-0.075f, 0.73f, 0.253f),
+                new Vector3(0.015f, 0.018f, 0.01f), Color.black);
+            Part("Pupil R", PrimitiveType.Sphere, new Vector3(0.075f, 0.73f, 0.253f),
+                new Vector3(0.015f, 0.018f, 0.01f), Color.black);
+            Part("Jersey Stripe", PrimitiveType.Cube, new Vector3(0f, 0.18f, 0.153f),
+                new Vector3(0.07f, 0.42f, 0.012f), new Color(0.85f, 0.9f, 1f));
             leftArm = Part("Left Arm", PrimitiveType.Capsule, new Vector3(-0.31f, 0.12f, 0f),
                 new Vector3(0.13f, 0.43f, 0.13f), kit);
             rightArm = Part("Right Arm", PrimitiveType.Capsule, new Vector3(0.31f, 0.12f, 0f),
