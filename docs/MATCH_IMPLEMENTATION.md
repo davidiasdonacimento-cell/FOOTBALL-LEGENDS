@@ -85,3 +85,14 @@ Os atletas atuais são personagens procedurais compostos por primitivas 3D, com 
 - Ainda faltam faltas, laterais, escanteios, pênaltis, substituições, cronômetro e áudio.
 - Ainda não houve compilação no Unity 6 nem teste em dispositivo Android real.
 - Nenhum APK desta etapa foi gerado ou validado.
+
+
+## Escolha do atleta controlado antes da partida
+
+- No modo de partida manual, a simulação começa pausada e apresenta um painel de pré-jogo.
+- O usuário escolhe um dos 11 atletas do time azul, visualizando número da camisa e posição.
+- Ao iniciar, somente o atleta escolhido recebe controle manual; a IA desse atleta fica desativada.
+- Os outros dez companheiros e os onze adversários continuam com a IA tática ativa.
+- O botão TROCAR continua permitindo transferir o controle para outro companheiro durante a partida; a IA volta a controlar o atleta anterior.
+- O modo árbitro IA x IA não utiliza essa tela de seleção.
+- A IA dos companheiros pode conduzir, passar e apoiar as jogadas sem exigir que o usuário controle mais de um atleta.
