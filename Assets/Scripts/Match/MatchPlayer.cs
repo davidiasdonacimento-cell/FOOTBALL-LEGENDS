@@ -21,6 +21,7 @@ namespace FootballLegends.Match
         private GameObject cardVisual;
         private float cardUntil;
         private float kickUntil;
+        private bool exitAfterComplaint;
 
         public void Initialize(int teamId, int shirtNumber, bool goalkeeper = false)
         {
@@ -161,7 +162,7 @@ namespace FootballLegends.Match
                 YellowCards++;
                 expelled = YellowCards >= 2;
             }
-            if (expelled) IsSentOff = true;
+            if (expelled) { IsSentOff = true; exitAfterComplaint = true; }
             IsComplaining = true;
             complaintUntil = Time.time + 3.8f;
             if (cardVisual != null) Destroy(cardVisual);
@@ -200,6 +201,11 @@ namespace FootballLegends.Match
                     if (leftArm != null) leftArm.localRotation = Quaternion.identity;
                     if (rightArm != null) rightArm.localRotation = Quaternion.identity;
                     if (head != null) head.localRotation = Quaternion.identity;
+                    if (exitAfterComplaint)
+                    {
+                        transform.position = new Vector3(TeamId == 0 ? -21f : 21f, transform.position.y, transform.position.z);
+                        exitAfterComplaint = false;
+                    }
                 }
             }
         }
