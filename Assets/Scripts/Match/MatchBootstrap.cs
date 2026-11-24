@@ -65,6 +65,7 @@ namespace FootballLegends.Match
                 if (lineTimer > 0f) lineTimer -= Time.deltaTime;
                 return;
             }
+            if (SimulationPaused) return;
 
             UpdatePlayerControls();
             UpdateAiMatch();
