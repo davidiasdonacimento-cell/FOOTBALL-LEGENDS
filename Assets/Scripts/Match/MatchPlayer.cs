@@ -141,24 +141,25 @@ namespace FootballLegends.Match
 
         public void ReceiveCard(bool red)
         {
-            if (red) IsSentOff = true;
-            else
+            bool expelled = red;
+            if (!red)
             {
                 YellowCards++;
-                if (YellowCards >= 2) IsSentOff = true;
+                expelled = YellowCards >= 2;
             }
+            if (expelled) IsSentOff = true;
             IsComplaining = true;
             complaintUntil = Time.time + 3.8f;
             if (cardVisual != null) Destroy(cardVisual);
             cardVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cardVisual.name = red ? "Red Card Visual" : "Yellow Card Visual";
+            cardVisual.name = expelled ? "Red Card Visual" : "Yellow Card Visual";
             cardVisual.transform.SetParent(transform, false);
             cardVisual.transform.localPosition = new Vector3(0.42f, 1.15f, 0.05f);
             cardVisual.transform.localScale = new Vector3(0.025f, 0.34f, 0.22f);
             Collider cardCollider = cardVisual.GetComponent<Collider>();
             if (cardCollider != null) Destroy(cardCollider);
             Renderer cardRenderer = cardVisual.GetComponent<Renderer>();
-            cardRenderer.material.color = red ? Color.red : Color.yellow;
+            cardRenderer.material.color = expelled ? Color.red : Color.yellow;
             cardUntil = Time.time + 3.8f;
         }
 
