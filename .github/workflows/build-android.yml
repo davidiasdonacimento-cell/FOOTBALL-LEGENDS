@@ -32,7 +32,7 @@ jobs:
           unityVersion: auto
           buildName: FOOTBALL-LEGENDS
           buildsPath: build
-          androidAppBundle: false
+          androidExportType: androidPackage
           allowDirtyBuild: true
 
       - name: Upload APK artifact
