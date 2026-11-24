@@ -326,6 +326,7 @@ namespace FootballLegends.Match
             ballBody.velocity = Vector3.zero;
             ballBody.AddForce(directionToReceiver * 10.5f + Vector3.up * 1.1f, ForceMode.Impulse);
             owner.Face(receiver.transform.position);
+            owner.TriggerKick();
         }
 
         private MatchPlayer FindClosestActivePlayer(Vector3 position)
@@ -496,6 +497,7 @@ namespace FootballLegends.Match
             }
             Vector3 passDirection = (receiver.transform.position - ball.transform.position).normalized;
             ballBody.AddForce(passDirection * 10f + Vector3.up * 1.2f, ForceMode.Impulse);
+            controlledPlayer.TriggerKick();
             SetStatus("PASSE PARA O JOGADOR " + receiver.ShirtNumber);
         }
 
@@ -506,6 +508,7 @@ namespace FootballLegends.Match
             ballBody.angularVelocity = Vector3.zero;
             ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.4f, 0.6f);
             ballBody.AddForce(new Vector3(0f, 4.5f, 19f), ForceMode.Impulse);
+            controlledPlayer.TriggerKick();
             SetStatus("CHUTE EXECUTADO");
         }
 
