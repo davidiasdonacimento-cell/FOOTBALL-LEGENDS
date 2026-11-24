@@ -5,19 +5,43 @@
 - **Jogar partida**: controle manual de um atleta, com IA para os demais jogadores.
 - **Ser árbitro • IA x IA**: duas equipes controladas pela IA e painel de arbitragem manual.
 
-## IA e movimentação
+## IA tática — versão em desenvolvimento
 
-O componente `TacticalPlayerAI` foi evoluído para uma primeira camada de coordenação coletiva:
+O componente `TacticalPlayerAI` possui uma camada de coordenação baseada em regras:
 
-- Reavalia decisões táticas em intervalos curtos, sem limitar o movimento ao intervalo de pensamento.
-- Atualiza deslocamento e animação a cada frame, corrigindo a movimentação em pequenos impulsos que ocorria quando o movimento era chamado somente após o temporizador.
-- Identifica o atleta mais próximo da bola em cada equipe.
+- Reavalia decisões em intervalos curtos e mantém deslocamento/animação atualizados a cada frame.
+- Identifica o jogador mais próximo da bola em cada equipe.
 - Organiza pressão no portador da bola e cobertura pelo segundo defensor mais próximo.
-- Quando a equipe tem a posse, distribui os demais atletas em opções de apoio, largura e profundidade de acordo com suas posições.
-- Sem posse, os jogadores recompõem uma estrutura defensiva compacta.
-- Mantém o goleiro em uma área de atuação própria, ajustando sua posição lateral à bola.
+- Distribui jogadores em opções de apoio, largura e profundidade.
+- Recompõe uma estrutura defensiva compacta sem posse.
+- Mantém o goleiro em uma área de atuação própria.
 
-**Limite atual:** esta é uma IA tática baseada em regras e distâncias. Ainda não possui planejamento de jogadas, estratégias de equipe configuráveis, avaliação avançada de risco, aprendizado ou simulação profissional. Os comportamentos precisam ser validados em partidas reais no Unity.
+### Decisão de passe
+
+O portador da bola avalia companheiros elegíveis antes de tocar:
+
+- distância de passe;
+- progressão em direção ao gol;
+- distância do marcador mais próximo do receptor;
+- espaço livre no corredor entre passador e receptor;
+- posição de impedimento no instante da decisão.
+
+O passe escolhido recebe um impulso físico e o jogador executa a animação básica de chute. Se não houver opção com pontuação suficiente, a IA conduz a bola para um corredor com mais espaço.
+
+### Movimentação ofensiva
+
+- Atacantes procuram profundidade e canais próximos à última linha defensiva.
+- Meio-campistas oferecem linhas de apoio em diferentes alturas.
+- Os jogadores mantêm largura baseada na posição inicial e ajustam o posicionamento à bola.
+
+### Estratégias de marcação
+
+- O jogador mais próximo pressiona o portador.
+- O segundo jogador mais próximo oferece cobertura.
+- Os demais recompõem o bloco defensivo e procuram adversários em sua zona.
+- A aproximação ao adversário é ponderada pela distância e pela proximidade da bola.
+
+**Limite atual:** trata-se de uma IA determinística baseada em regras, pontuações e distâncias. Não é aprendizado de máquina e ainda não possui planejamento avançado de jogadas, estratégias configuráveis por treinador, análise de fadiga ou tomada de decisão profissional. O comportamento ainda precisa ser observado e balanceado em partidas completas.
 
 ## Goleiros, gols e placar
 
@@ -37,13 +61,13 @@ O componente `TacticalPlayerAI` foi evoluído para uma primeira camada de coorde
 - Parar e retomar a partida.
 - Aplicar cartão amarelo ou vermelho sem exigir falta ou justificativa.
 - Dois amarelos também resultam em expulsão.
-- Jogador punido faz gesto de reclamação, movimenta os braços e a boca, vira a cabeça e exibe uma fala na interface.
+- Jogador punido faz gesto de reclamação e exibe uma fala na interface.
 
 ## Controles do modo jogador
 
 - Analógico virtual para movimentação.
 - Condução básica da bola quando o atleta está perto.
-- Passe com avaliação de impedimento.
+- Passe manual com avaliação de impedimento.
 - Chute com impulso físico.
 - Corrida temporária, troca de jogador e tentativa de desarme.
 
@@ -53,9 +77,11 @@ Os atletas atuais são personagens procedurais compostos por primitivas 3D, com 
 
 ## Limites e validação pendente
 
-- A IA tática melhorada ainda precisa de testes de comportamento e balanceamento em partidas completas.
+- A nova seleção de passes, os desmarques e a marcação zonal precisam ser testados em partidas completas.
+- Verificar se a IA evita passes interceptáveis e respeita impedimento nos diferentes lados do campo.
+- Balancear velocidade, distância de passe, pontuação e frequência de decisão.
 - A bola e os jogadores precisam de balanceamento de física e colisões.
-- O sistema de gols, goleiros, placar, impedimento e cartões precisa ser testado em partidas completas.
+- O sistema de gols, goleiros, placar, impedimento e cartões precisa ser testado.
 - Ainda faltam faltas, laterais, escanteios, pênaltis, substituições, cronômetro e áudio.
 - Ainda não houve compilação no Unity 6 nem teste em dispositivo Android real.
 - Nenhum APK desta etapa foi gerado ou validado.
