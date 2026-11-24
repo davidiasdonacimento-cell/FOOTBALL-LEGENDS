@@ -218,7 +218,7 @@ namespace FootballLegends.Match
             if (FindObjectOfType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 
-            scoreText = MakeText(canvas.transform, "0  -  0", 34, new Vector2(0.5f, 0.94f), new Vector2(0.25f, 0.08f), TextAnchor.MiddleCenter);
+            scoreText = MakeText(canvas.transform, "AZUL  0  -  0  VERMELHO", 30, new Vector2(0.5f, 0.94f), new Vector2(0.25f, 0.08f), TextAnchor.MiddleCenter);
             statusText = MakeText(canvas.transform, "", 22, new Vector2(0.5f, 0.84f), new Vector2(0.65f, 0.06f), TextAnchor.MiddleCenter);
             complaintText = MakeText(canvas.transform, "", 24, new Vector2(0.5f, 0.76f), new Vector2(0.72f, 0.06f), TextAnchor.MiddleCenter);
 
@@ -246,10 +246,10 @@ namespace FootballLegends.Match
                 CreateChildButton(refereePanel.transform, "PRÓXIMO >", new Vector2(0.38f, 0.62f), SelectNextPlayer);
                 CreateChildButton(refereePanel.transform, "AMARELO", new Vector2(0.64f, 0.62f), GiveYellowCard);
                 CreateChildButton(refereePanel.transform, "VERMELHO", new Vector2(0.87f, 0.62f), GiveRedCard);
-                CreateChildButton(refereePanel.transform, "PARAR JOGO", new Vector2(0.26f, 0.25f), StopMatch);
-                CreateChildButton(refereePanel.transform, "RETOMAR", new Vector2(0.50f, 0.25f), ResumeMatch);
-                CreateChildButton(refereePanel.transform, "IMPEDIMENTO", new Vector2(0.74f, 0.25f), ConfirmOffside);
-                CreateChildButton(refereePanel.transform, "SEGUE", new Vector2(0.92f, 0.25f), PlayOn);
+                CreateChildButton(refereePanel.transform, "PARAR JOGO", new Vector2(0.15f, 0.25f), StopMatch);
+                CreateChildButton(refereePanel.transform, "RETOMAR", new Vector2(0.38f, 0.25f), ResumeMatch);
+                CreateChildButton(refereePanel.transform, "IMPEDIMENTO", new Vector2(0.62f, 0.25f), ConfirmOffside);
+                CreateChildButton(refereePanel.transform, "SEGUE", new Vector2(0.85f, 0.25f), PlayOn);
                 refereePanel.SetActive(true);
             }
 
@@ -286,6 +286,14 @@ namespace FootballLegends.Match
                 Mathf.Clamp(controlledPlayer.transform.position.x, -PitchHalfWidth + 1f, PitchHalfWidth - 1f),
                 0.9f,
                 Mathf.Clamp(controlledPlayer.transform.position.z, -PitchHalfLength + 1f, PitchHalfLength - 1f));
+            if (input.sqrMagnitude > 0.04f &&
+                Vector3.Distance(controlledPlayer.transform.position, ball.transform.position) < 1.65f)
+            {
+                ballBody.velocity = Vector3.zero;
+                ballBody.angularVelocity = Vector3.zero;
+                Vector3 dribbleDirection = move.normalized;
+                ball.transform.position = controlledPlayer.transform.position + dribbleDirection * 1.05f + Vector3.up * 0.28f;
+            }
         }
 
         private void UpdateAiMatch()
@@ -295,6 +303,7 @@ namespace FootballLegends.Match
             aiClock = 0f;
             MatchPlayer owner = FindClosestActivePlayer(ball.transform.position);
             if (owner == null || Vector3.Distance(owner.transform.position, ball.transform.position) > 3.4f) return;
+            if (!refereeMode && owner == controlledPlayer) return;
             List<MatchPlayer> own = owner.TeamId == 0 ? teamA : teamB;
             int direction = owner.TeamId == 0 ? 1 : -1;
             MatchPlayer receiver = FindForwardReceiver(owner, own, direction);
@@ -600,7 +609,7 @@ namespace FootballLegends.Match
             obj.transform.SetParent(parent, false);
             RectTransform rect = obj.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(310f, 112f);
+            rect.sizeDelta = new Vector2(220f, 88f);
             obj.GetComponent<Image>().color = new Color(0.04f, 0.31f, 0.55f, 0.96f);
             Button button = obj.GetComponent<Button>();
             ColorBlock colors = button.colors;
@@ -619,12 +628,12 @@ namespace FootballLegends.Match
             Text labelText = labelObject.GetComponent<Text>();
             labelText.font = uiFont;
             labelText.text = label;
-            labelText.fontSize = 21;
+            labelText.fontSize = 18;
             labelText.alignment = TextAnchor.MiddleCenter;
             labelText.color = Color.white;
             labelText.resizeTextForBestFit = true;
             labelText.resizeTextMinSize = 13;
-            labelText.resizeTextMaxSize = 21;
+            labelText.resizeTextMaxSize = 18;
             labelText.raycastTarget = false;
         }
 
