@@ -1,7 +1,9 @@
 using System.IO;
+using System.Linq;
 using FootballLegends.Lobby;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -15,6 +17,30 @@ namespace FootballLegends.Editor
         static ProjectSetup()
         {
             EditorApplication.delayCall += EnsureProjectReady;
+        }
+
+        public static void BuildAndroid()
+        {
+            EnsureProjectReady();
+            Directory.CreateDirectory("build/Android");
+            EditorUserBuildSettings.buildAppBundle = false;
+
+            string[] scenes = EditorBuildSettings.scenes
+                .Where(scene => scene.enabled)
+                .Select(scene => scene.path)
+                .ToArray();
+
+            BuildPlayerOptions options = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = "build/Android/FOOTBALL-LEGENDS.apk",
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            };
+
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new System.Exception("Android build failed: " + report.summary.result);
         }
 
         public static void EnsureProjectReady()
@@ -45,7 +71,7 @@ namespace FootballLegends.Editor
             PlayerSettings.companyName = "Football Legends Studio";
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.footballlegends.game");
-            PlayerSettings.Android.minSdkVersion = Android最低Sdk();
+            PlayerSettings.Android.minSdkVersion = GetMinimumAndroidSdkVersion();
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         }
