@@ -21,6 +21,8 @@ namespace FootballLegends.Match
         private float possessionChangedAt;
         private float refreshAt;
         private MatchPlayer userControlledPlayer;
+        private int attackingPatternTeam = -1;
+        private float attackingPatternUntil;
 
         public void Configure(IReadOnlyList<MatchPlayer> first, IReadOnlyList<MatchPlayer> second, Transform matchBall)
         {
@@ -91,6 +93,20 @@ namespace FootballLegends.Match
             MatchPlayer userPlayer = GetUserControlledPlayer(teamId);
             return userPlayer != null &&
                 (userPlayer.transform.position - ballPosition).sqrMagnitude <= radius * radius;
+        }
+
+        public bool ActivateAttackingPattern(int teamId, MatchPlayer carrier, float duration)
+        {
+            if (carrier == null || carrier.IsSentOff || carrier.TeamId != teamId || duration <= 0f)
+                return false;
+            attackingPatternTeam = teamId;
+            attackingPatternUntil = Time.time + duration;
+            return true;
+        }
+
+        public bool IsAttackingPatternActive(int teamId)
+        {
+            return attackingPatternTeam == teamId && Time.time < attackingPatternUntil;
         }
 
         public TacticalPhase GetPhase(int teamId)
