@@ -2,55 +2,47 @@
 
 Jogo de futebol 3D para Android, desenvolvido com **Unity 6**.
 
-## Estado do projeto
+## Estado atual
 
-- Fase atual: arquitetura e especificação.
-- Plataforma-alvo: Android (APK).
+- Fase: fundação técnica e lobby inicial.
+- Plataforma-alvo: Android APK.
 - Orientação: paisagem.
-- Interface: lobby original com apresentação cinematográfica, inspirado na organização visual de jogos modernos de futebol.
-- Motor: Unity 6.
-- Build planejado: GitHub Actions.
+- Motor: Unity 6.6 (`6000.6.10f1`).
+- Build: GitHub Actions com GameCI.
+- Lobby inicial: cenário de estádio e personagem em blockout, navegação funcional entre painéis.
 
-> O projeto ainda não contém uma cena jogável nem código de gameplay. A implementação começa após a revisão da arquitetura e dos requisitos documentados.
+**Atenção:** o estádio e o personagem atuais são formas temporárias de blockout, não modelos 3D finais. Ainda não existe partida de futebol jogável. O APK ainda não foi compilado nem testado em aparelho.
 
 ## Documentação
 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Requisitos e critérios de aceitação](docs/REQUIREMENTS.md)
+- [Como configurar e gerar o APK](docs/BUILD_ANDROID.md)
 
-## Estrutura planejada
+## Estrutura
 
-```
+```text
 Assets/
+  Editor/
+  Scenes/Lobby/
+  Scripts/Lobby/
+  Models/Players/
+  Models/Stadium/
+  Prefabs/
+  Materials/
   Animations/
   Audio/
-  Materials/
-  Models/
-    Players/
-    Stadium/
-  Prefabs/
-    Lobby/
-    UI/
-  Scenes/
-    Lobby/
-  Scripts/
-    Core/
-    Lobby/
-    Players/
-    UI/
-  Settings/
 Packages/
 ProjectSettings/
-.github/
-  workflows/
+.github/workflows/
 docs/
 ```
 
 ## Princípios técnicos
 
 - Sistemas separados por responsabilidade.
-- UI adaptável a diferentes resoluções Android.
-- Carregamento controlado de recursos e cenas.
-- Salvamento local versionado e tolerante a falhas.
+- Interface adaptável a resoluções Android.
+- Carregamento controlado de cenas e recursos.
 - Nenhum botão decorativo: toda ação visível deve ter comportamento definido.
 - Identidade visual, clubes e atletas originais ou devidamente licenciados.
+- Credenciais e arquivos de assinatura não entram no Git.
