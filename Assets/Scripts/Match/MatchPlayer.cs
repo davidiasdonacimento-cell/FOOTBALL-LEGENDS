@@ -20,6 +20,7 @@ namespace FootballLegends.Match
         private Renderer shirtRenderer;
         private GameObject cardVisual;
         private float cardUntil;
+        private float kickUntil;
 
         public void Initialize(int teamId, int shirtNumber, bool goalkeeper = false)
         {
@@ -100,9 +101,22 @@ namespace FootballLegends.Match
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), 8f * Time.deltaTime);
         }
 
+        public void TriggerKick()
+        {
+            kickUntil = Time.time + 0.28f;
+        }
+
         public void UpdateAnimation(float speed)
         {
             animationClock += Time.deltaTime * (speed > 0.2f ? 10f : 2f);
+            if (Time.time < kickUntil && !IsComplaining)
+            {
+                rightLeg.localRotation = Quaternion.Euler(-72f, 0f, 0f);
+                leftLeg.localRotation = Quaternion.Euler(18f, 0f, 0f);
+                rightArm.localRotation = Quaternion.Euler(-18f, 0f, -12f);
+                leftArm.localRotation = Quaternion.Euler(18f, 0f, 12f);
+                return;
+            }
             float swing = speed > 0.2f ? Mathf.Sin(animationClock) * 32f : Mathf.Sin(animationClock) * 2f;
             if (IsComplaining)
             {
