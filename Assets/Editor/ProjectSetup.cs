@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using FootballLegends.Lobby;
+using FootballLegends.Match;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Build.Reporting;
@@ -62,9 +63,19 @@ namespace FootballLegends.Editor
                 EditorSceneManager.SaveScene(scene, ScenePath);
             }
 
+            const string matchScenePath = "Assets/Scenes/Match/Match.unity";
+            if (!File.Exists(matchScenePath))
+            {
+                Scene matchScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                GameObject matchRoot = new GameObject("FOOTBALL LEGENDS - Match Bootstrap");
+                matchRoot.AddComponent<MatchBootstrap>();
+                EditorSceneManager.SaveScene(matchScene, matchScenePath);
+            }
+
             EditorBuildSettings.scenes = new[]
             {
-                new EditorBuildSettingsScene(ScenePath, true)
+                new EditorBuildSettingsScene(ScenePath, true),
+                new EditorBuildSettingsScene(matchScenePath, true)
             };
 
             PlayerSettings.productName = "FOOTBALL LEGENDS";
