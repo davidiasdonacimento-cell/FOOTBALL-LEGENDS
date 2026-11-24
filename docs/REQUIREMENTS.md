@@ -14,7 +14,7 @@
 - Perfil e progresso acessíveis.
 - Prévia do elenco acessível.
 - Área de eventos e desafios acessível.
-- Acesso rápido à experiência de partida, sem apresentar modo não implementado como funcional.
+- Acesso à partida manual e ao modo árbitro IA x IA.
 - Animações de entrada, seleção e transição.
 - Retorno ao lobby sem reiniciar o aplicativo.
 
@@ -25,20 +25,30 @@
 - Uniformes e elementos visuais originais ou licenciados.
 - Recursos temporários devem ser identificados como temporários; não podem ser apresentados como assets finais.
 
-## 4. Interação
+## 4. Partida e arbitragem
+- IA movimenta os atletas continuamente por funções e formação.
+- Um goleiro por equipe, com posicionamento e tentativa de defesa.
+- Bola com física básica, chute, passe e condução.
+- Gols detectados ao cruzar a linha dentro da área válida e placar atualizado.
+- Avaliação de impedimento no instante do passe, com linha virtual.
+- Modo árbitro permite selecionar qualquer atleta, parar/retomar a partida, dar amarelo/vermelho sem motivo e decidir impedimento.
+- Dois cartões amarelos geram expulsão.
+- Atleta punido reclama com animação corporal, movimento de boca e fala visual na interface.
+
+## 5. Interação
 - Cada botão visível deve executar uma ação real.
 - Estados de carregamento, indisponibilidade e erro devem ser comunicados.
 - Toques não podem ficar bloqueados por painéis invisíveis.
 - Navegação deve permitir voltar ao lobby sem reinicialização.
 
-## 5. Estabilidade e dados
+## 6. Estabilidade e dados
 - Inicialização sem crash.
 - Salvamento local versionado.
 - Falha de leitura do save não pode impedir a abertura do lobby.
 - Carregamento e descarregamento controlados de recursos.
 - Logs úteis para diagnosticar falhas.
 
-## 6. Critérios de aceitação da primeira etapa
+## 7. Critérios de aceitação
 - [ ] Projeto Unity 6 abre sem erro.
 - [ ] Build Android de teste é gerado pela automação.
 - [ ] APK instala e abre em dispositivo Android compatível.
@@ -50,12 +60,15 @@
 - [ ] Não há crash durante o fluxo principal.
 - [ ] Desempenho é medido em aparelho real, incluindo Redmi 12.
 
-## 7. Fora do escopo da primeira etapa
-- Partida completa de futebol.
-- Física avançada da bola e dos jogadores.
-- IA de adversários.
+## 8. Pendências de produção
+- IA tática avançada com estratégias, marcação coordenada e tomada de decisão contextual.
+- Modelos humanos finais com malhas, UVs, texturas e rig profissional.
+- Animações avançadas de corrida, passe, chute, defesa, queda e comemoração.
+- Regras completas de arbitragem, cronômetro, substituições, faltas, laterais, escanteios e pênaltis.
+- Testes de estabilidade e desempenho em aparelho Android real.
+- Multiplayer online.
 - Multiplayer online.
 - Mercado, compras ou monetização.
 - Licenciamento de clubes, ligas e atletas reais.
 
-Esses recursos serão especificados separadamente antes de serem implementados.
+Esses recursos serão desenvolvidos e validados em etapas posteriores.
