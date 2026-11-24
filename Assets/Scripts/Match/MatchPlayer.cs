@@ -141,10 +141,17 @@ namespace FootballLegends.Match
 
         private void Update()
         {
-            if (IsComplaining && Time.time >= complaintUntil)
+            if (IsComplaining)
             {
-                IsComplaining = false;
-                if (mouth != null) mouth.localScale = new Vector3(0.10f, 0.025f, 0.018f);
+                UpdateAnimation(0f);
+                if (Time.time >= complaintUntil)
+                {
+                    IsComplaining = false;
+                    if (mouth != null) mouth.localScale = new Vector3(0.10f, 0.025f, 0.018f);
+                    if (leftArm != null) leftArm.localRotation = Quaternion.identity;
+                    if (rightArm != null) rightArm.localRotation = Quaternion.identity;
+                    if (head != null) head.localRotation = Quaternion.identity;
+                }
             }
         }
     }
