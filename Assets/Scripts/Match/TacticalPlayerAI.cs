@@ -9,6 +9,7 @@ namespace FootballLegends.Match
         private IReadOnlyList<MatchPlayer> teammates;
         private IReadOnlyList<MatchPlayer> opponents;
         private Transform ball;
+        private Rigidbody ballBody;
         private int attackDirection;
         private Vector3 home;
         private float thinkTimer;
@@ -20,6 +21,7 @@ namespace FootballLegends.Match
             teammates = team;
             opponents = opposition;
             ball = matchBall;
+            ballBody = matchBall != null ? matchBall.GetComponent<Rigidbody>() : null;
             attackDirection = direction;
             home = homePosition;
         }
@@ -40,6 +42,15 @@ namespace FootballLegends.Match
                 if (candidate == null || candidate.IsSentOff) continue;
                 float d = (candidate.transform.position - ballPos).sqrMagnitude;
                 if (d < nearest) { nearest = d; closest = candidate; }
+            }
+
+            float nearestOpponent = float.MaxValue;
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                MatchPlayer opponent = opponents[i];
+                if (opponent == null || opponent.IsSentOff) continue;
+                float d = (opponent.transform.position - ballPos).sqrMagnitude;
+                if (d < nearestOpponent) nearestOpponent = d;
             }
 
             Vector3 target = home;
