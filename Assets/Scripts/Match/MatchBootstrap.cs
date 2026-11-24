@@ -7,6 +7,7 @@ namespace FootballLegends.Match
 {
     public sealed class MatchBootstrap : MonoBehaviour
     {
+        public static bool SimulationPaused { get; private set; }
         private const float PitchHalfWidth = 18f;
         private const float PitchHalfLength = 29f;
         private readonly List<MatchPlayer> players = new List<MatchPlayer>();
@@ -41,6 +42,7 @@ namespace FootballLegends.Match
             Screen.orientation = ScreenOrientation.LandscapeLeft;
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 0;
+            SimulationPaused = false;
             refereeMode = PlayerPrefs.GetInt("FL_MATCH_MODE", 0) == 1;
             BuildPitch();
             BuildTeams();
@@ -286,6 +288,7 @@ namespace FootballLegends.Match
                 Mathf.Clamp(controlledPlayer.transform.position.x, -PitchHalfWidth + 1f, PitchHalfWidth - 1f),
                 0.9f,
                 Mathf.Clamp(controlledPlayer.transform.position.z, -PitchHalfLength + 1f, PitchHalfLength - 1f));
+            if (move.sqrMagnitude > 0.01f) controlledPlayer.Face(controlledPlayer.transform.position + move);
             if (input.sqrMagnitude > 0.04f &&
                 Vector3.Distance(controlledPlayer.transform.position, ball.transform.position) < 1.65f)
             {
@@ -315,6 +318,7 @@ namespace FootballLegends.Match
                 if (refereeMode)
                 {
                     matchStopped = true;
+                    SimulationPaused = true;
                     ballBody.velocity = Vector3.zero;
                     ballBody.isKinematic = true;
                     SetStatus("LANCE EM ANÁLISE • POSSÍVEL IMPEDIMENTO");
@@ -369,6 +373,7 @@ namespace FootballLegends.Match
             if (scoreText != null) scoreText.text = "AZUL  " + scoreA + "  -  " + scoreB + "  VERMELHO";
             SetStatus(team == 0 ? "GOOOOOOL DO TIME AZUL!" : "GOOOOOOL DO TIME VERMELHO!");
             matchStopped = true;
+            SimulationPaused = true;
             ballBody.velocity = Vector3.zero;
             ballBody.isKinematic = true;
             Invoke(nameof(RestartAfterGoal), 2f);
@@ -381,6 +386,7 @@ namespace FootballLegends.Match
             ballBody.angularVelocity = Vector3.zero;
             ball.transform.position = new Vector3(0f, 0.55f, 0f);
             matchStopped = false;
+            SimulationPaused = false;
         }
 
         private void CheckGoalkeeperSave()
@@ -417,6 +423,7 @@ namespace FootballLegends.Match
             ballBody.isKinematic = false;
             ballBody.velocity = Vector3.zero;
             matchStopped = false;
+            SimulationPaused = false;
             SetStatus("ÁRBITRO: IMPEDIMENTO MARCADO • TIRO LIVRE INDIRETO");
             if (offsideLine != null) offsideLine.enabled = false;
         }
@@ -425,6 +432,7 @@ namespace FootballLegends.Match
         {
             ballBody.isKinematic = false;
             matchStopped = false;
+            SimulationPaused = false;
             SetStatus("ÁRBITRO: SEGUE O JOGO");
             if (offsideLine != null) offsideLine.enabled = false;
         }
@@ -468,6 +476,7 @@ namespace FootballLegends.Match
         private void StopMatch()
         {
             matchStopped = true;
+            SimulationPaused = true;
             ballBody.velocity = Vector3.zero;
             ballBody.isKinematic = true;
             SetStatus("ÁRBITRO: PARTIDA PARADA");
@@ -477,6 +486,7 @@ namespace FootballLegends.Match
         {
             ballBody.isKinematic = false;
             matchStopped = false;
+            SimulationPaused = false;
             SetStatus("ÁRBITRO: PARTIDA RETOMADA");
         }
 
