@@ -1,0 +1,422 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+
+namespace FootballLegends.Match
+{
+    public sealed class MatchBootstrap : MonoBehaviour
+    {
+        private const float PitchHalfWidth = 18f;
+        private const float PitchHalfLength = 29f;
+        private readonly List<MatchPlayer> players = new List<MatchPlayer>();
+        private readonly List<MatchPlayer> teamA = new List<MatchPlayer>();
+        private readonly List<MatchPlayer> teamB = new List<MatchPlayer>();
+
+        private bool refereeMode;
+        private bool matchStopped;
+        private float aiClock;
+        private int scoreA;
+        private int scoreB;
+        private int controlledTeam = 0;
+        private MatchPlayer controlledPlayer;
+        private GameObject ball;
+        private VirtualJoystick joystick;
+        private Text statusText;
+        private Text scoreText;
+        private GameObject refereePanel;
+        private LineRenderer offsideLine;
+        private float lineTimer;
+        private float sprintUntil;
+        private Font uiFont;
+
+        private void Awake()
+        {
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
+            Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;
+            refereeMode = PlayerPrefs.GetInt("FL_MATCH_MODE", 0) == 1;
+            BuildPitch();
+            BuildTeams();
+            BuildBall();
+            BuildCamera();
+            BuildInterface();
+            SetStatus(refereeMode ? "MODO ÁRBITRO • IA x IA" : "PARTIDA • CONTROLE DO JOGADOR");
+        }
+
+        private void Update()
+        {
+            if (matchStopped)
+            {
+                if (lineTimer > 0f) lineTimer -= Time.deltaTime;
+                return;
+            }
+
+            if (refereeMode) UpdateAiMatch();
+            else UpdatePlayerControls();
+
+            if (lineTimer > 0f)
+            {
+                lineTimer -= Time.deltaTime;
+                if (lineTimer <= 0f && offsideLine != null) offsideLine.enabled = false;
+            }
+        }
+
+        private void BuildPitch()
+        {
+            RenderSettings.ambientLight = new Color(0.58f, 0.62f, 0.68f);
+            RenderSettings.fog = false;
+
+            GameObject field = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            field.name = "Match Pitch";
+            field.transform.position = Vector3.zero;
+            field.transform.localScale = new Vector3(3.6f, 1f, 5.8f);
+            SetColor(field, new Color(0.08f, 0.38f, 0.17f));
+
+            CreateMarking(new Vector3(0f, 0.035f, 0f), new Vector3(36f, 0.04f, 0.12f));
+            CreateMarking(new Vector3(0f, 0.035f, -29f), new Vector3(36f, 0.04f, 0.12f));
+            CreateMarking(new Vector3(0f, 0.035f, 29f), new Vector3(36f, 0.04f, 0.12f));
+            CreateMarking(new Vector3(-18f, 0.035f, 0f), new Vector3(0.12f, 0.04f, 58f));
+            CreateMarking(new Vector3(18f, 0.035f, 0f), new Vector3(0.12f, 0.04f, 58f));
+            CreateMarking(new Vector3(0f, 0.04f, 0f), new Vector3(36f, 0.04f, 0.12f));
+
+            CreateGoal(0, -29f);
+            CreateGoal(1, 29f);
+
+            GameObject lightObject = new GameObject("Match Sun");
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.25f;
+            lightObject.transform.rotation = Quaternion.Euler(55f, -30f, 0f);
+
+            GameObject lineObject = new GameObject("Offside Line");
+            offsideLine = lineObject.AddComponent<LineRenderer>();
+            offsideLine.positionCount = 2;
+            offsideLine.startWidth = 0.16f;
+            offsideLine.endWidth = 0.16f;
+            offsideLine.material = new Material(Shader.Find("Sprites/Default"));
+            offsideLine.startColor = new Color(1f, 0.25f, 0.08f, 1f);
+            offsideLine.endColor = new Color(1f, 0.25f, 0.08f, 1f);
+            offsideLine.enabled = false;
+            offsideLine.useWorldSpace = true;
+        }
+
+        private void BuildTeams()
+        {
+            Vector3[] formationA =
+            {
+                new Vector3(0f, 0.9f, -22f), new Vector3(-11f, 0.9f, -14f),
+                new Vector3(-4f, 0.9f, -12f), new Vector3(4f, 0.9f, -12f),
+                new Vector3(11f, 0.9f, -14f), new Vector3(-6f, 0.9f, -3f),
+                new Vector3(6f, 0.9f, -3f), new Vector3(0f, 0.9f, 3f),
+                new Vector3(-9f, 0.9f, 8f), new Vector3(9f, 0.9f, 8f),
+                new Vector3(0f, 0.9f, 14f)
+            };
+            Vector3[] formationB =
+            {
+                new Vector3(0f, 0.9f, 22f), new Vector3(-11f, 0.9f, 14f),
+                new Vector3(-4f, 0.9f, 12f), new Vector3(4f, 0.9f, 12f),
+                new Vector3(11f, 0.9f, 14f), new Vector3(-6f, 0.9f, 3f),
+                new Vector3(6f, 0.9f, 3f), new Vector3(0f, 0.9f, -3f),
+                new Vector3(-9f, 0.9f, -8f), new Vector3(9f, 0.9f, -8f),
+                new Vector3(0f, 0.9f, -14f)
+            };
+
+            for (int i = 0; i < formationA.Length; i++)
+            {
+                teamA.Add(CreatePlayer(0, i + 1, formationA[i], new Color(0.12f, 0.42f, 0.95f)));
+                teamB.Add(CreatePlayer(1, i + 1, formationB[i], new Color(0.9f, 0.16f, 0.12f)));
+            }
+            controlledPlayer = teamA[7];
+        }
+
+        private MatchPlayer CreatePlayer(int team, int number, Vector3 position, Color color)
+        {
+            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            model.name = (team == 0 ? "Blue" : "Red") + " Player " + number;
+            model.transform.position = position;
+            model.transform.localScale = new Vector3(0.78f, 0.9f, 0.78f);
+            SetColor(model, color);
+            MatchPlayer player = model.AddComponent<MatchPlayer>();
+            player.Initialize(team, number, number == 1);
+            players.Add(player);
+            return player;
+        }
+
+        private void BuildBall()
+        {
+            ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            ball.name = "Match Ball";
+            ball.transform.position = new Vector3(0f, 0.55f, -1f);
+            ball.transform.localScale = Vector3.one * 0.58f;
+            SetColor(ball, Color.white);
+        }
+
+        private void BuildCamera()
+        {
+            Camera camera = Camera.main;
+            if (camera == null)
+            {
+                GameObject cameraObject = new GameObject("Match Camera");
+                camera = cameraObject.AddComponent<Camera>();
+                cameraObject.tag = "MainCamera";
+            }
+            camera.transform.position = new Vector3(0f, 48f, -36f);
+            camera.transform.LookAt(new Vector3(0f, 0f, 0f));
+            camera.fieldOfView = 54f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.06f, 0.12f, 0.18f);
+        }
+
+        private void BuildInterface()
+        {
+            uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            GameObject canvasObject = new GameObject("Match HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            if (FindObjectOfType<EventSystem>() == null)
+                new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+
+            scoreText = MakeText(canvas.transform, "0  -  0", 34, new Vector2(0.5f, 0.94f), new Vector2(0.25f, 0.08f), TextAnchor.MiddleCenter);
+            statusText = MakeText(canvas.transform, "", 22, new Vector2(0.5f, 0.84f), new Vector2(0.65f, 0.06f), TextAnchor.MiddleCenter);
+
+            if (!refereeMode)
+            {
+                BuildJoystick(canvas.transform);
+                CreateHudButton(canvas.transform, "PASSE", new Vector2(0.87f, 0.23f), new Vector2(0.12f, 0.12f), PassBall);
+                CreateHudButton(canvas.transform, "CHUTE", new Vector2(0.91f, 0.39f), new Vector2(0.12f, 0.12f), ShootBall);
+                CreateHudButton(canvas.transform, "CORRER", new Vector2(0.76f, 0.18f), new Vector2(0.12f, 0.10f), Sprint);
+                CreateHudButton(canvas.transform, "TROCAR", new Vector2(0.73f, 0.34f), new Vector2(0.12f, 0.10f), SwitchPlayer);
+                CreateHudButton(canvas.transform, "DESARMAR", new Vector2(0.87f, 0.55f), new Vector2(0.14f, 0.10f), Tackle);
+            }
+            else
+            {
+                CreateHudButton(canvas.transform, "PAUSAR", new Vector2(0.91f, 0.92f), new Vector2(0.12f, 0.08f), TogglePause);
+                refereePanel = new GameObject("Referee Decision Panel", typeof(RectTransform), typeof(Image));
+                refereePanel.transform.SetParent(canvas.transform, false);
+                RectTransform panelRect = refereePanel.GetComponent<RectTransform>();
+                panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.22f);
+                panelRect.sizeDelta = new Vector2(760f, 210f);
+                refereePanel.GetComponent<Image>().color = new Color(0.02f, 0.04f, 0.08f, 0.95f);
+                CreateChildButton(refereePanel.transform, "MARCAR IMPEDIMENTO", new Vector2(0.28f, 0.5f), ConfirmOffside);
+                CreateChildButton(refereePanel.transform, "DEIXAR SEGUIR", new Vector2(0.72f, 0.5f), PlayOn);
+                refereePanel.SetActive(false);
+            }
+
+            CreateHudButton(canvas.transform, "SAIR", new Vector2(0.08f, 0.92f), new Vector2(0.12f, 0.08f), ReturnToLobby);
+        }
+
+        private void BuildJoystick(Transform parent)
+        {
+            GameObject baseObject = new GameObject("Movement Joystick", typeof(RectTransform), typeof(Image), typeof(VirtualJoystick));
+            baseObject.transform.SetParent(parent, false);
+            RectTransform baseRect = baseObject.GetComponent<RectTransform>();
+            baseRect.anchorMin = baseRect.anchorMax = new Vector2(0.13f, 0.22f);
+            baseRect.sizeDelta = new Vector2(210f, 210f);
+            baseObject.GetComponent<Image>().color = new Color(0.05f, 0.08f, 0.12f, 0.55f);
+
+            GameObject knob = new GameObject("Joystick Handle", typeof(RectTransform), typeof(Image));
+            knob.transform.SetParent(baseObject.transform, false);
+            RectTransform knobRect = knob.GetComponent<RectTransform>();
+            knobRect.anchorMin = knobRect.anchorMax = new Vector2(0.5f, 0.5f);
+            knobRect.sizeDelta = new Vector2(88f, 88f);
+            knob.GetComponent<Image>().color = new Color(0.35f, 0.75f, 1f, 0.85f);
+            joystick = baseObject.GetComponent<VirtualJoystick>();
+            joystick.Configure(knobRect, 78f);
+        }
+
+        private void UpdatePlayerControls()
+        {
+            if (joystick == null || controlledPlayer == null) return;
+            Vector2 input = joystick.Value;
+            Vector3 move = new Vector3(input.x, 0f, input.y);
+            float speed = Time.time < sprintUntil ? 8.5f : 5.2f;
+            controlledPlayer.transform.position += move * speed * Time.deltaTime;
+            controlledPlayer.transform.position = new Vector3(
+                Mathf.Clamp(controlledPlayer.transform.position.x, -PitchHalfWidth + 1f, PitchHalfWidth - 1f),
+                0.9f,
+                Mathf.Clamp(controlledPlayer.transform.position.z, -PitchHalfLength + 1f, PitchHalfLength - 1f));
+        }
+
+        private void UpdateAiMatch()
+        {
+            aiClock += Time.deltaTime;
+            if (aiClock >= 4.5f)
+            {
+                aiClock = 0f;
+                List<MatchPlayer> attacking = Random.value > 0.5f ? teamA : teamB;
+                int direction = attacking == teamA ? 1 : -1;
+                MatchPlayer receiver = attacking[Random.Range(5, attacking.Count)];
+                ball.transform.position = receiver.transform.position + new Vector3(0f, -0.3f, -direction * 1.5f);
+                OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, receiver.TeamId, direction);
+                ShowOffsideLine(result.LineZ, result.IsOffside);
+                if (result.IsOffside)
+                {
+                    matchStopped = true;
+                    SetStatus("LANCE EM ANÁLISE • " + result.Explanation);
+                    if (refereePanel != null) refereePanel.SetActive(true);
+                }
+                else
+                {
+                    SetStatus("JOGO EM ANDAMENTO • " + result.Explanation);
+                }
+            }
+        }
+
+        private void ShowOffsideLine(float z, bool flagged)
+        {
+            if (offsideLine == null) return;
+            offsideLine.startColor = flagged ? Color.red : Color.yellow;
+            offsideLine.endColor = flagged ? Color.red : Color.yellow;
+            offsideLine.SetPosition(0, new Vector3(-PitchHalfWidth, 0.12f, z));
+            offsideLine.SetPosition(1, new Vector3(PitchHalfWidth, 0.12f, z));
+            offsideLine.enabled = true;
+            lineTimer = 4f;
+        }
+
+        private void ConfirmOffside()
+        {
+            if (refereePanel != null) refereePanel.SetActive(false);
+            matchStopped = false;
+            SetStatus("ÁRBITRO: IMPEDIMENTO MARCADO • TIRO LIVRE INDIRETO");
+            if (offsideLine != null) offsideLine.enabled = false;
+        }
+
+        private void PlayOn()
+        {
+            if (refereePanel != null) refereePanel.SetActive(false);
+            matchStopped = false;
+            SetStatus("ÁRBITRO: SEGUE O JOGO");
+            if (offsideLine != null) offsideLine.enabled = false;
+        }
+
+        private void PassBall()
+        {
+            if (controlledPlayer == null) return;
+            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 2f);
+            SetStatus("PASSE EXECUTADO");
+        }
+
+        private void ShootBall()
+        {
+            if (controlledPlayer == null) return;
+            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.1f, 5f);
+            SetStatus("CHUTE EXECUTADO");
+        }
+
+        private void Sprint() { sprintUntil = Time.time + 2.5f; SetStatus("CORRIDA ATIVADA"); }
+
+        private void SwitchPlayer()
+        {
+            int index = teamA.IndexOf(controlledPlayer);
+            controlledPlayer = teamA[(index + 1) % teamA.Count];
+            SetStatus("JOGADOR " + controlledPlayer.ShirtNumber + " SELECIONADO");
+        }
+
+        private void Tackle() { SetStatus("AÇÃO DEFENSIVA EXECUTADA"); }
+        private void TogglePause() { matchStopped = !matchStopped; SetStatus(matchStopped ? "PARTIDA PAUSADA" : "PARTIDA RETOMADA"); }
+
+        private void ReturnToLobby()
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
+        }
+
+        private void CreateGoal(int team, float z)
+        {
+            Color color = new Color(0.88f, 0.91f, 0.96f);
+            CreatePost(new Vector3(-3.6f, 1.2f, z), new Vector3(0.18f, 2.4f, 0.18f), color);
+            CreatePost(new Vector3(3.6f, 1.2f, z), new Vector3(0.18f, 2.4f, 0.18f), color);
+            CreatePost(new Vector3(0f, 2.4f, z), new Vector3(7.2f, 0.18f, 0.18f), color);
+        }
+
+        private void CreatePost(Vector3 position, Vector3 scale, Color color)
+        {
+            GameObject post = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            post.transform.position = position;
+            post.transform.localScale = scale;
+            SetColor(post, color);
+        }
+
+        private void CreateMarking(Vector3 position, Vector3 scale)
+        {
+            GameObject marking = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marking.transform.position = position;
+            marking.transform.localScale = scale;
+            SetColor(marking, Color.white);
+        }
+
+        private void SetColor(GameObject target, Color color)
+        {
+            Renderer renderer = target.GetComponent<Renderer>();
+            if (renderer == null) return;
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+            renderer.material = new Material(shader);
+            renderer.material.color = color;
+        }
+
+        private Text MakeText(Transform parent, string value, int size, Vector2 anchor,
+            Vector2 normalizedSize, TextAnchor alignment)
+        {
+            GameObject obj = new GameObject(value + " Text", typeof(RectTransform), typeof(Text));
+            obj.transform.SetParent(parent, false);
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = anchor;
+            rect.sizeDelta = new Vector2(1920f * normalizedSize.x, 1080f * normalizedSize.y);
+            Text text = obj.GetComponent<Text>();
+            text.font = uiFont;
+            text.text = value;
+            text.fontSize = size;
+            text.alignment = alignment;
+            text.color = Color.white;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 12;
+            text.resizeTextMaxSize = size;
+            return text;
+        }
+
+        private void CreateHudButton(Transform parent, string label, Vector2 anchor,
+            Vector2 normalizedSize, UnityEngine.Events.UnityAction action)
+        {
+            GameObject obj = CreateButtonObject(parent, label, anchor, normalizedSize);
+            obj.GetComponent<Button>().onClick.AddListener(action);
+        }
+
+        private void CreateChildButton(Transform parent, string label, Vector2 anchor,
+            UnityEngine.Events.UnityAction action)
+        {
+            GameObject obj = CreateButtonObject(parent, label, anchor, new Vector2(0.43f, 0.58f));
+            obj.GetComponent<Button>().onClick.AddListener(action);
+        }
+
+        private GameObject CreateButtonObject(Transform parent, string label, Vector2 anchor, Vector2 size)
+        {
+            GameObject obj = new GameObject(label + " Button", typeof(RectTransform), typeof(Image), typeof(Button));
+            obj.transform.SetParent(parent, false);
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = anchor;
+            rect.sizeDelta = new Vector2(1920f * size.x, 1080f * size.y);
+            Image image = obj.GetComponent<Image>();
+            image.color = new Color(0.04f, 0.31f, 0.55f, 0.94f);
+            Button button = obj.GetComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(0.10f, 0.52f, 0.78f);
+            colors.pressedColor = new Color(0.02f, 0.18f, 0.32f);
+            button.colors = colors;
+            Text labelText = MakeText(obj.transform, label, 22, new Vector2(0.5f, 0.5f),
+                new Vector2(0.92f, 0.8f), TextAnchor.MiddleCenter);
+            labelText.raycastTarget = false;
+            return obj;
+        }
+
+        private void SetStatus(string message)
+        {
+            if (statusText != null) statusText.text = message;
+        }
+    }
+}
