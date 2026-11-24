@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace FootballLegends.Lobby
 {
-    public sealed class LobbyController : MonoBehaviour
+    public sealed partial class LobbyController : MonoBehaviour
     {
         [SerializeField] private GameObject homePanel;
         [SerializeField] private GameObject contentPanel;
