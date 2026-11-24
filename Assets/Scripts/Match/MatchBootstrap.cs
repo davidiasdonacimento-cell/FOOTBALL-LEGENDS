@@ -21,6 +21,7 @@ namespace FootballLegends.Match
         private int controlledTeam = 0;
         private MatchPlayer controlledPlayer;
         private GameObject ball;
+        private Rigidbody ballBody;
         private VirtualJoystick joystick;
         private Text statusText;
         private Text scoreText;
@@ -110,7 +111,7 @@ namespace FootballLegends.Match
                 new Vector3(11f, 0.9f, -14f), new Vector3(-6f, 0.9f, -3f),
                 new Vector3(6f, 0.9f, -3f), new Vector3(0f, 0.9f, 3f),
                 new Vector3(-9f, 0.9f, 8f), new Vector3(9f, 0.9f, 8f),
-                new Vector3(0f, 0.9f, 18f)
+                new Vector3(0f, 0.9f, 12f)
             };
             Vector3[] formationB =
             {
@@ -119,7 +120,7 @@ namespace FootballLegends.Match
                 new Vector3(11f, 0.9f, 14f), new Vector3(-6f, 0.9f, 3f),
                 new Vector3(6f, 0.9f, 3f), new Vector3(0f, 0.9f, -3f),
                 new Vector3(-9f, 0.9f, -8f), new Vector3(9f, 0.9f, -8f),
-                new Vector3(0f, 0.9f, -18f)
+                new Vector3(0f, 0.9f, -12f)
             };
 
             for (int i = 0; i < formationA.Length; i++)
@@ -150,6 +151,11 @@ namespace FootballLegends.Match
             ball.transform.position = new Vector3(0f, 0.55f, -1f);
             ball.transform.localScale = Vector3.one * 0.58f;
             SetColor(ball, Color.white);
+            ballBody = ball.AddComponent<Rigidbody>();
+            ballBody.mass = 0.43f;
+            ballBody.drag = 0.35f;
+            ballBody.angularDrag = 0.08f;
+            ballBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         }
 
         private void BuildCamera()
@@ -302,23 +308,28 @@ namespace FootballLegends.Match
         {
             if (controlledPlayer == null) return;
             MatchPlayer receiver = teamA[teamA.Count - 1];
-            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 0f);
+            ballBody.velocity = Vector3.zero;
+            ballBody.angularVelocity = Vector3.zero;
+            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.35f, 0f);
             OffsideResult result = OffsideRuleSystem.Evaluate(receiver, ball.transform.position, players, 0, 1);
             ShowOffsideLine(result.LineZ, result.IsOffside);
             if (result.IsOffside)
             {
                 SetStatus("IMPEDIMENTO • PASSE CANCELADO");
-                ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, -0.3f, 0f);
                 return;
             }
-            ball.transform.position = receiver.transform.position + new Vector3(0f, -0.3f, 0f);
+            Vector3 passDirection = (receiver.transform.position - ball.transform.position).normalized;
+            ballBody.AddForce(passDirection * 10f + Vector3.up * 1.2f, ForceMode.Impulse);
             SetStatus("PASSE PARA O JOGADOR " + receiver.ShirtNumber);
         }
 
         private void ShootBall()
         {
             if (controlledPlayer == null) return;
-            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.1f, 5f);
+            ballBody.velocity = Vector3.zero;
+            ballBody.angularVelocity = Vector3.zero;
+            ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.4f, 0.6f);
+            ballBody.AddForce(new Vector3(0f, 4.5f, 19f), ForceMode.Impulse);
             SetStatus("CHUTE EXECUTADO");
         }
 
@@ -331,7 +342,27 @@ namespace FootballLegends.Match
             SetStatus("JOGADOR " + controlledPlayer.ShirtNumber + " SELECIONADO");
         }
 
-        private void Tackle() { SetStatus("AÇÃO DEFENSIVA EXECUTADA"); }
+        private void Tackle()
+        {
+            if (controlledPlayer == null) return;
+            MatchPlayer nearest = null;
+            float nearestDistance = float.MaxValue;
+            foreach (MatchPlayer opponent in teamB)
+            {
+                float distance = Vector3.Distance(controlledPlayer.transform.position, opponent.transform.position);
+                if (distance < nearestDistance) { nearestDistance = distance; nearest = opponent; }
+            }
+            if (nearest != null && nearestDistance <= 4.2f)
+            {
+                ballBody.velocity = Vector3.zero;
+                ball.transform.position = controlledPlayer.transform.position + new Vector3(0f, 0.35f, 0f);
+                SetStatus("DESARME BEM-SUCEDIDO");
+            }
+            else
+            {
+                SetStatus("APROXIME-SE DO ADVERSÁRIO PARA DESARMAR");
+            }
+        }
         private void TogglePause() { matchStopped = !matchStopped; SetStatus(matchStopped ? "PARTIDA PAUSADA" : "PARTIDA RETOMADA"); }
 
         private void ReturnToLobby()
