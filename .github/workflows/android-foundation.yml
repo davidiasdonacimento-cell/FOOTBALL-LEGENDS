@@ -36,7 +36,7 @@ jobs:
       - name: Install Android SDK, NDK and CMake
         shell: bash
         run: |
-          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" --licenses < <(yes)
           "$SDKMANAGER" --install \
             "platform-tools" \
             "platforms;android-35" \
