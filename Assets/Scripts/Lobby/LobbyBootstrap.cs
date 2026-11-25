@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace FootballLegends.Lobby
 {
@@ -8,6 +9,14 @@ namespace FootballLegends.Lobby
     {
         private const float UiScale = 1f;
         private Font uiFont;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureLobbyRuntime()
+        {
+            if (SceneManager.GetActiveScene().name == "Match") return;
+            if (FindObjectOfType<LobbyBootstrap>() == null)
+                new GameObject("FOOTBALL LEGENDS - Runtime Lobby").AddComponent<LobbyBootstrap>();
+        }
 
         private void Awake()
         {
@@ -65,6 +74,22 @@ namespace FootballLegends.Lobby
                 new Color(0.72f, 0.55f, 0.42f));
         }
 
+        private static Font LoadUiFont()
+        {
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 18);
+            return font;
+        }
+
+        private static Shader FindRuntimeShader()
+        {
+            Shader shader = Shader.Find("Standard");
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+            return shader;
+        }
+
         private GameObject CreatePrimitive(string objectName, PrimitiveType type,
             Vector3 position, Vector3 scale, Color color)
         {
@@ -73,9 +98,10 @@ namespace FootballLegends.Lobby
             item.transform.position = position;
             item.transform.localScale = scale;
             Renderer renderer = item.GetComponent<Renderer>();
-            if (renderer != null)
+            Shader shader = FindRuntimeShader();
+            if (renderer != null && shader != null)
             {
-                Material material = new Material(Shader.Find("Standard"));
+                Material material = new Material(shader);
                 material.color = color;
                 renderer.material = material;
             }
@@ -84,7 +110,7 @@ namespace FootballLegends.Lobby
 
         private void BuildInterface()
         {
-            uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            uiFont = LoadUiFont();
 
             GameObject canvasObject = new GameObject("Lobby Canvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
