@@ -17,7 +17,7 @@ namespace FootballLegends.Editor
 
         static ProjectSetup()
         {
-            EditorApplication.delayCall += EnsureProjectReady;
+            EnsureProjectReady();
         }
 
         public static void BuildAndroid()
