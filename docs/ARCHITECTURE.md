@@ -1,84 +1,58 @@
-# Arquitetura — FOOTBALL LEGENDS
+# Arquitetura — FOOTBALL LEGENDS MOBILE
 
-## 1. Visão geral
+## Decisão técnica
+A branch `native-android-opengles` usa aplicação Android nativa, C++17, Android NDK, CMake e OpenGL ES 3.0. Não usa Unity nem Godot.
 
-Aplicação Unity 6 para Android, organizada em módulos com dependências explícitas. O projeto contém lobby e uma primeira camada de partida com IA tática baseada em regras, física básica da bola e modo árbitro.
+## Camadas
+- **Android:** Activity, ciclo de vida, janela, orientação e entrada de toque.
+- **JNI:** fronteira pequena entre Java e C++.
+- **Core:** estado da partida, relógio, fases, configuração, logs e persistência versionada.
+- **Renderização:** contexto OpenGL ES 3.0, câmera 3D, projeção, materiais, malhas, iluminação e recursos GPU.
+- **Gameplay:** simulação em passo fixo, atletas, bola, colisões, passe, chute, goleiros, regras, placar e IA tática.
+- **Rede (futura):** cliente separado, protocolo versionado, autenticação, matchmaking, sincronização e reconexão.
 
-## 2. Camadas
+## Organização
+```text
+app/
+  build.gradle
+  src/main/
+    AndroidManifest.xml
+    java/com/footballlegends/mobile/
+      MainActivity.java
+      GameSurface.java
+      GameRenderer.java
+    cpp/
+      CMakeLists.txt
+      native-lib.cpp
+native/
+  include/football/{core,gameplay,render}/
+  src/{core,gameplay,render}/
+docs/
+.github/workflows/
+```
 
-### Core
-- **GameBootstrap**: inicialização e composição dos serviços.
-- **SceneFlow**: troca assíncrona de cenas e retorno seguro ao lobby.
-- **SaveService**: leitura/gravação local com versão de dados.
-- **AudioService**: música, ambiente e efeitos de interface.
-- **Diagnostics**: logs e captura de erros relevantes.
+## Inicialização e ciclo de vida
+1. Android cria a Activity em paisagem.
+2. A superfície OpenGL é criada.
+3. JNI inicializa o motor nativo.
+4. O motor configura estado e recursos gráficos.
+5. O loop desenha os quadros.
+6. Ao pausar ou perder contexto, recursos GPU são recriados com segurança.
 
-### Lobby
-- **LobbyController**: estado geral e ciclo de vida do lobby.
-- **LobbyNavigation**: navegação entre áreas e seleção do destino.
-- **LobbyView**: apresentação da interface e atualização visual.
-- **LobbyTransition**: animações e transições.
+## Simulação
+A simulação usa passo fixo independente da taxa de quadros. A renderização interpola estados. Entrada de toque vira comandos de jogo e não altera diretamente estruturas internas da simulação.
 
-### Apresentação 3D
-- **PlayerShowcase**: personagem, uniforme, pose e animações.
-- **StadiumEnvironment**: campo, arquibancadas, iluminação e ambiente.
-- **CameraRig**: enquadramento do atleta e composição da cena.
-- **AssetCatalog**: referências e carregamento de modelos e materiais.
+## Modos
+- **Offline:** partida local com IA.
+- **Online:** servidor autoritativo valida relógio, bola, gols, faltas e resultados. O modo online permanece pendente até backend, protocolo, autenticação, matchmaking e testes estarem implementados.
 
-### Funcionalidades do lobby
-- **ProfileSystem**: perfil, nível e progresso.
-- **TeamPreview**: prévia do elenco e formação.
-- **EventSystem**: eventos, desafios e torneios apresentados no lobby.
-- **QuickMatchEntry**: entrada para partida manual ou modo árbitro IA x IA.
+## Desempenho
+- Alvo inicial ARM64.
+- Evitar alocações por quadro.
+- Controlar resolução, sombras, materiais e quantidade de objetos.
+- Carregar recursos sob demanda.
+- Medir FPS, memória, temperatura e inicialização em aparelhos reais.
+- Tratar perda e recriação do contexto OpenGL.
 
-## 3. Fluxo de inicialização
-
-1. Carregar configurações e serviços essenciais.
-2. Validar os dados locais e aplicar migrações necessárias.
-3. Abrir a cena Lobby.
-4. Carregar em segundo plano os recursos de apresentação.
-5. Exibir o lobby quando os elementos essenciais estiverem prontos.
-
-## 4. Cena Lobby
-
-Composição prevista:
-- estádio 3D como cenário de fundo;
-- atleta 3D à esquerda;
-- navegação e painéis à direita;
-- barra superior para perfil, moeda fictícia e notificações;
-- painéis de eventos, elenco e acesso rápido.
-
-A interface deve usar Canvas Scaler e áreas seguras do Android. O layout será testado em diferentes proporções de tela.
-
-## 5. Persistência
-
-- Dados locais em formato versionado.
-- Escrita atômica: gravar em arquivo temporário e substituir o arquivo principal após sucesso.
-- Valores padrão quando não existir salvamento.
-- Tratamento de arquivo inválido sem travar a inicialização.
-- Não armazenar segredos no repositório.
-
-## 6. Desempenho Android
-
-- Preferir modelos e texturas otimizados para dispositivos móveis.
-- Controlar luzes em tempo real, sombras e transparências.
-- Usar LOD quando os modelos justificarem.
-- Evitar carregar o estádio e o elenco completo de uma vez.
-- Medir FPS, memória e tempo de carregamento em dispositivo real.
-
-## 7. Build e integração contínua
-
-GitHub Actions será usado para validar os arquivos e, após configuração da licença Unity e do módulo Android, executar a compilação. Um workflow verde não substitui o teste do APK em aparelho real.
-
-## 8. Sistemas de partida
-
-- **MatchBootstrap**: composição da partida, placar, gols, HUD e fluxo de arbitragem.
-- **MatchPlayer**: atleta procedural, estado disciplinar, movimentação e animações básicas.
-- **TacticalPlayerAI**: posicionamento por formação, aproximação da bola, avanço e recomposição.
-- **OffsideRuleSystem**: avaliação de impedimento no instante do passe.
-- **VirtualJoystick**: entrada de toque para movimentação e condução.
-- **RefereeMode**: seleção de atleta, pausa, cartões livres e decisões de impedimento.
-
-## 9. Limites e validação
-
-A IA tática e as regras implementadas são uma primeira camada jogável, não uma simulação de futebol profissional completa. Os atletas são modelos procedurais provisórios; modelos 3D finais, rig profissional, animações avançadas e áudio ainda precisam ser integrados. A física, a arbitragem e o placar precisam de compilação e testes em aparelho. Multiplayer e licenciamento de clubes/atletas não estão implementados.
+## Testes
+Testes unitários da lógica C++, compilação Gradle/C++ no CI, ciclo de vida Android e testes físicos. Build verde não comprova jogabilidade nem estabilidade em todos os aparelhos.
