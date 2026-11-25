@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 namespace FootballLegends.Match
 {
@@ -39,6 +40,14 @@ namespace FootballLegends.Match
         private GameObject playerSelectionPanel;
         private Text playerSelectionText;
         private int selectedPlayerIndex = 7;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureMatchRuntime()
+        {
+            if (SceneManager.GetActiveScene().name != "Match") return;
+            if (FindObjectOfType<MatchBootstrap>() == null)
+                new GameObject("FOOTBALL LEGENDS - Runtime Match").AddComponent<MatchBootstrap>();
+        }
 
         private void Awake()
         {
@@ -214,9 +223,17 @@ namespace FootballLegends.Match
             camera.backgroundColor = new Color(0.06f, 0.12f, 0.18f);
         }
 
+        private static Font LoadUiFont()
+        {
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 18);
+            return font;
+        }
+
         private void BuildInterface()
         {
-            uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            uiFont = LoadUiFont();
             GameObject canvasObject = new GameObject("Match HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
