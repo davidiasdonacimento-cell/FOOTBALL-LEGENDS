@@ -25,6 +25,7 @@ public final class LobbyUi extends FrameLayout {
     private final Context context;
     private final GameSurface gameSurface;
     private final LocalProfileStore profileStore;
+    private final MatchUi matchUi;
     private final LinearLayout content;
     private final TextView pageTitle;
     private int formation = 0;
@@ -39,10 +40,11 @@ public final class LobbyUi extends FrameLayout {
             {"I. Souza","Ponta E.","84"}
     };
 
-    public LobbyUi(Context context, GameSurface surface) {
+    public LobbyUi(Context context, GameSurface surface, MatchUi matchUi) {
         super(context);
         this.context = context;
         this.gameSurface = surface;
+        this.matchUi = matchUi;
         this.profileStore = new LocalProfileStore(context);
         setClipChildren(false);
         setClipToPadding(false);
@@ -124,12 +126,24 @@ public final class LobbyUi extends FrameLayout {
     }
 
     private void buildModes() {
-        addText("ESCOLHA SUA PRÓXIMA EXPERIÊNCIA", 12, ACCENT, true);
-        addMode("PARTIDA RÁPIDA", "Fluxo de partida será conectado ao motor nas fases de campo e gameplay.");
+        addText("ESCOLHA COMO VOCÊ QUER PARTICIPAR", 12, ACCENT, true);
+        addText("Partida 11 contra 11 com controle direto ou arbitragem manual.", 11, Color.WHITE, false);
+        addAction("JOGAR COMO ATLETA", () -> startMatch(0));
+        addAction("SER O ÁRBITRO", () -> startMatch(1));
+        addSpacer(8);
         addMode("CARREIRA", "Estrutura de carreira entra na fase de modos e progressão.");
         addMode("LIGAS E TORNEIOS", "Competições serão integradas quando o motor de partida estiver pronto.");
         addMode("TREINAMENTO", "Treinos dependem dos controles e da física de jogo.");
         addMode("ONLINE", "Serviços online dependem de backend real e serão ativados somente após testes.");
+    }
+
+
+    private void startMatch(int role) {
+        gameSurface.startMatch();
+        gameSurface.setControlRole(role);
+        matchUi.setRole(role);
+        matchUi.setVisibility(View.VISIBLE);
+        setVisibility(View.GONE);
     }
 
     private void addMode(String title, String description) {
