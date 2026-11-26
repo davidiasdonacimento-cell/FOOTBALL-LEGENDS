@@ -15,6 +15,8 @@ public:
     void onSurfaceCreated();
     void onSurfaceChanged(int width, int height);
     void renderFrame();
+    void setLobbyFormation(int formation);
+    void setCinematicCamera(bool enabled);
 
 private:
     Renderer renderer_;

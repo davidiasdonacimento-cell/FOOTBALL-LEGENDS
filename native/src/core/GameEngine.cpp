@@ -2,16 +2,10 @@
 
 namespace football {
 
-void GameEngine::onSurfaceCreated() {
-    renderer_.initialize();
-}
-
-void GameEngine::onSurfaceChanged(int width, int height) {
-    renderer_.resize(width, height);
-}
-
-void GameEngine::renderFrame() {
-    renderer_.render();
-}
+void GameEngine::onSurfaceCreated() { renderer_.initialize(); }
+void GameEngine::onSurfaceChanged(int width, int height) { renderer_.resize(width, height); }
+void GameEngine::renderFrame() { renderer_.render(); }
+void GameEngine::setLobbyFormation(int formation) { renderer_.setFormation(formation); }
+void GameEngine::setCinematicCamera(bool enabled) { renderer_.setCinematicCamera(enabled); }
 
 } // namespace football
