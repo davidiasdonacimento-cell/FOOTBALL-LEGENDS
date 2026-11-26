@@ -5,7 +5,13 @@ namespace football {
 void GameEngine::onSurfaceCreated() { renderer_.initialize(); }
 void GameEngine::onSurfaceChanged(int width, int height) { renderer_.resize(width, height); }
 void GameEngine::renderFrame() {
-    match_.update(1.0f / 60.0f);
+    const auto now = std::chrono::steady_clock::now();
+    const float delta = hasPreviousFrame_
+        ? std::chrono::duration<float>(now - previousFrame_).count()
+        : (1.0f / 60.0f);
+    previousFrame_ = now;
+    hasPreviousFrame_ = true;
+    match_.update(delta);
     renderer_.setMatchSnapshot(match_);
     renderer_.render();
 }
