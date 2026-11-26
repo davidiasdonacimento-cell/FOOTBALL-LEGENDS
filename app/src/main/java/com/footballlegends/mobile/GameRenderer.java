@@ -47,6 +47,14 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
         if (engineHandle != 0L) NativeBridge.nativeSetCinematicCamera(engineHandle, enabled);
     }
 
+    void startMatch() { if (engineHandle != 0L) NativeBridge.nativeStartMatch(engineHandle); }
+
+    void pauseMatch() { if (engineHandle != 0L) NativeBridge.nativePauseMatch(engineHandle); }
+
+    void resumeMatch() { if (engineHandle != 0L) NativeBridge.nativeResumeMatch(engineHandle); }
+
+    void resetMatch() { if (engineHandle != 0L) NativeBridge.nativeResetMatch(engineHandle); }
+
     void releaseNativeEngine() {
         if (engineHandle != 0L) {
             NativeBridge.nativeDestroy(engineHandle);
