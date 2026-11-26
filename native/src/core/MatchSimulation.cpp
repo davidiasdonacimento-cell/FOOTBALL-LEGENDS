@@ -29,6 +29,7 @@ void MatchSimulation::initializeTeams() {
             p.stamina = 1.0f;
             p.sentOff = false;
             p.yellowCards = 0;
+            p.protestSeconds = 0.0f;
         }
     }
     ball_ = {};
@@ -47,6 +48,17 @@ void MatchSimulation::reset() {
     playerInput_ = {};
     playerSpeedMultiplier_ = 1.0f;
     initializeTeams();
+    event_ = MatchEvent::None;
+    eventBeforeVar_ = MatchEvent::None;
+    eventPlayer_ = -1;
+    restartTeam_ = -1;
+    restartPosition_ = {};
+    refereePosition_ = {0.0f, -5.0f};
+    offsideLine_ = 0.0f;
+    offsideLineVisible_ = false;
+    timeScale_ = 1.0f;
+    cinematicSlowMoRemaining_ = 0.0f;
+    previousTimeScale_ = 1.0f;
 }
 void MatchSimulation::start() {
     if (state_ == MatchState::Ready) {
@@ -117,17 +129,28 @@ void MatchSimulation::updateTeam(float dt, int team) {
     const int chaser = nearestPlayer(team, ball_.position);
     for (int i = team * 11; i < team * 11 + 11; ++i) {
         Player& p = players_[i];
-        if (p.sentOff) { p.velocity = {}; continue; }
+        if (p.sentOff) {
+            p.velocity = {};
+            if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
+            else p.position.y += (p.position.y >= 0.0f ? 1.0f : -1.0f) * 2.8f * dt;
+            continue;
+        }
         Vec2 target = p.position;
         if (team == 0 && i == controlledPlayer_ && controlRole_ == ControlRole::Player) {
             p.velocity = {playerInput_.x * kPlayerSpeed * playerSpeedMultiplier_, playerInput_.y * kPlayerSpeed * playerSpeedMultiplier_};
             p.position.x += p.velocity.x * dt;
             p.position.y += p.velocity.y * dt;
-            clampPlayer(p);
+            if (p.role == 0) {
+                p.position.x = std::max(-35.0f, std::min(-26.0f, p.position.x));
+                p.position.y = std::max(-15.0f, std::min(15.0f, p.position.y));
+            } else clampPlayer(p);
             p.stamina = std::max(0.0f, p.stamina - dt * (playerInput_.x != 0.0f || playerInput_.y != 0.0f ? 0.0015f : 0.0003f));
             continue;
         }
-        if (i == carrier && carrierTeam == team) {
+        if (p.role == 0) {
+            const float goalX = team == 0 ? -32.0f : 32.0f;
+            target = {goalX, std::max(-12.0f, std::min(12.0f, ball_.position.y * 0.35f))};
+        } else if (i == carrier && carrierTeam == team) {
             target = {team == 0 ? 32.0f : -32.0f, 0.0f};
         } else if (carrierTeam != team && i == chaser) {
             target = ball_.position;
@@ -184,11 +207,16 @@ void MatchSimulation::updateBall(float dt) {
 }
 void MatchSimulation::update(float deltaSeconds) {
     if (state_ != MatchState::Running || !std::isfinite(deltaSeconds) || deltaSeconds <= 0.0f) return;
-    const float dt = std::min(deltaSeconds, 0.05f);
+    const float dt = std::min(deltaSeconds, 0.05f) * timeScale_;
     matchSeconds_ += dt;
     updateTeam(dt, 0);
     updateTeam(dt, 1);
     updateBall(dt);
+    updateReferee(dt);
+    if (cinematicSlowMoRemaining_ > 0.0f) {
+        cinematicSlowMoRemaining_ = std::max(0.0f, cinematicSlowMoRemaining_ - dt);
+        if (cinematicSlowMoRemaining_ == 0.0f) timeScale_ = previousTimeScale_;
+    }
 }
 bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlayerId,
                               float directionX, float directionY) {
@@ -219,6 +247,19 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
                 }
             }
             if (targetPlayerId < 0 || targetPlayerId >= kPlayerCount || players_[targetPlayerId].team != player.team || players_[targetPlayerId].sentOff) return false;
+            if (detectOffside(player.team, targetPlayerId)) {
+                event_ = MatchEvent::Offside;
+                eventPlayer_ = targetPlayerId;
+                restartTeam_ = 1 - player.team;
+                restartPosition_ = ball_.position;
+                ball_.owner = -1;
+                ball_.velocity = {};
+                state_ = MatchState::Paused;
+                previousTimeScale_ = timeScale_;
+                timeScale_ = std::min(timeScale_, 0.35f);
+                cinematicSlowMoRemaining_ = 1.0f;
+                return true;
+            }
             ball_.owner = -1;
             ball_.lastTouchTeam = player.team;
             ball_.position = player.position;
@@ -243,6 +284,8 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             const int opponent = nearestPlayer(1 - player.team, player.position);
             if (opponent < 0 || distance(player.position, players_[opponent].position) > 2.2f) return false;
             if (ball_.owner == opponent) {
+                const float speed = std::sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y);
+                if (speed > 7.5f) { registerFoul(playerId); return false; }
                 ball_.owner = playerId;
                 ball_.lastTouchTeam = player.team;
                 return true;
@@ -265,8 +308,129 @@ bool MatchSimulation::issueCard(int playerId, int cardType) {
 bool MatchSimulation::setPlayerSentOff(int playerId, bool sentOff) {
     if (playerId < 0 || playerId >= kPlayerCount) return false;
     players_[playerId].sentOff = sentOff;
+    if (sentOff) players_[playerId].protestSeconds = 1.8f;
     if (sentOff && ball_.owner == playerId) ball_.owner = -1;
     return true;
+}
+
+
+void MatchSimulation::setTimeScale(float scale) {
+    if (!std::isfinite(scale)) return;
+    timeScale_ = std::max(0.15f, std::min(2.0f, scale));
+}
+void MatchSimulation::updateReferee(float dt) {
+    Vec2 offset{0.0f, -5.0f};
+    if (ball_.velocity.x != 0.0f || ball_.velocity.y != 0.0f) {
+        const Vec2 movement = normalized(ball_.velocity);
+        offset = {-movement.x * 4.5f - movement.y * 2.0f,
+                  -movement.y * 4.5f + movement.x * 2.0f};
+    }
+    Vec2 target{ball_.position.x + offset.x, ball_.position.y + offset.y};
+    target.x = std::max(-34.0f, std::min(34.0f, target.x));
+    target.y = std::max(-53.0f, std::min(53.0f, target.y));
+    const Vec2 direction = normalized({target.x - refereePosition_.x, target.y - refereePosition_.y});
+    const float distanceToTarget = distance(target, refereePosition_);
+    const float step = std::min(distanceToTarget, 5.0f * dt);
+    refereePosition_.x += direction.x * step;
+    refereePosition_.y += direction.y * step;
+}
+bool MatchSimulation::detectOffside(int attackingTeam, int receiverId) {
+    if (receiverId < 0 || receiverId >= kPlayerCount) return false;
+    const float sign = attackingTeam == 0 ? 1.0f : -1.0f;
+    float defenders[10]{};
+    int count = 0;
+    for (int i = (1 - attackingTeam) * 11; i < (1 - attackingTeam) * 11 + 11; ++i) {
+        if (players_[i].sentOff || players_[i].role == 0) continue;
+        defenders[count++] = players_[i].position.x * sign;
+    }
+    if (count < 2) return false;
+    std::sort(defenders, defenders + count, std::greater<float>());
+    offsideLine_ = defenders[1] * sign;
+    offsideLineVisible_ = true;
+    const Player& receiver = players_[receiverId];
+    const float receiverProgress = receiver.position.x * sign;
+    const float ballProgress = ball_.position.x * sign;
+    const bool inOpponentHalf = receiverProgress > 0.0f;
+    const bool aheadOfBall = receiverProgress > ballProgress + 0.15f;
+    const bool aheadOfSecondLast = receiverProgress > defenders[1] + 0.25f;
+    return inOpponentHalf && aheadOfBall && aheadOfSecondLast;
+}
+void MatchSimulation::registerFoul(int playerId) {
+    if (playerId < 0 || playerId >= kPlayerCount) return;
+    eventPlayer_ = playerId;
+    const int attackingTeam = 1 - players_[playerId].team;
+    const bool inPenaltyArea = attackingTeam == 0
+        ? (ball_.position.x > 25.0f && std::fabs(ball_.position.y) < 16.0f)
+        : (ball_.position.x < -25.0f && std::fabs(ball_.position.y) < 16.0f);
+    event_ = inPenaltyArea ? MatchEvent::Penalty : MatchEvent::Foul;
+    restartTeam_ = attackingTeam;
+    restartPosition_ = ball_.position;
+    state_ = MatchState::Paused;
+    previousTimeScale_ = timeScale_;
+    timeScale_ = std::min(timeScale_, 0.35f);
+    cinematicSlowMoRemaining_ = 1.1f;
+}
+bool MatchSimulation::callFoul(int playerId) {
+    if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
+    if (state_ == MatchState::Finished || state_ == MatchState::Ready) return false;
+    registerFoul(playerId);
+    return true;
+}
+bool MatchSimulation::callOffside(int playerId) {
+    if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || state_ == MatchState::Finished || state_ == MatchState::Ready) return false;
+    event_ = MatchEvent::Offside;
+    eventPlayer_ = playerId;
+    restartTeam_ = 1 - players_[playerId].team;
+    restartPosition_ = ball_.position;
+    offsideLine_ = players_[playerId].position.x;
+    offsideLineVisible_ = true;
+    ball_.owner = -1;
+    ball_.velocity = {};
+    state_ = MatchState::Paused;
+    return true;
+}
+bool MatchSimulation::requestVarReview() {
+    if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ == MatchEvent::None || event_ == MatchEvent::VarReview) return false;
+    eventBeforeVar_ = event_;
+    event_ = MatchEvent::VarReview;
+    return true;
+}
+bool MatchSimulation::resolveVar(bool upholdDecision) {
+    if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ != MatchEvent::VarReview) return false;
+    if (upholdDecision) event_ = eventBeforeVar_;
+    else {
+        clearEvent();
+        state_ = MatchState::Running;
+    }
+    eventBeforeVar_ = MatchEvent::None;
+    return true;
+}
+bool MatchSimulation::restartPlay() {
+    if (state_ != MatchState::Paused || restartTeam_ < 0 || event_ == MatchEvent::VarReview) return false;
+    if (event_ == MatchEvent::Penalty) {
+        const float spotX = restartTeam_ == 0 ? 29.5f : -29.5f;
+        restartPosition_ = {spotX, 0.0f};
+        const int taker = restartTeam_ * 11 + 10;
+        ball_.owner = taker;
+        ball_.position = restartPosition_;
+    } else {
+        const int taker = nearestPlayer(restartTeam_, restartPosition_);
+        if (taker < 0) return false;
+        ball_.owner = taker;
+        ball_.position = restartPosition_;
+    }
+    ball_.velocity = {};
+    ball_.lastTouchTeam = restartTeam_;
+    clearEvent();
+    state_ = MatchState::Running;
+    return true;
+}
+void MatchSimulation::clearEvent() {
+    event_ = MatchEvent::None;
+    eventBeforeVar_ = MatchEvent::None;
+    eventPlayer_ = -1;
+    restartTeam_ = -1;
+    offsideLineVisible_ = false;
 }
 
 } // namespace football
