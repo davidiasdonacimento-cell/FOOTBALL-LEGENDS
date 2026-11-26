@@ -80,6 +80,7 @@ private:
     ControlRole controlRole_{ControlRole::Player};
     int controlledPlayer_{10};
     Vec2 playerInput_{};
+    float playerSpeedMultiplier_{1.0f};
 };
 
 } // namespace football
