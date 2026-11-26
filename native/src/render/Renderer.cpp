@@ -244,10 +244,13 @@ void Renderer::render() {
     static const auto start=Clock::now();
     const float seconds=std::chrono::duration<float>(Clock::now()-start).count();
     const float orbit=cinematicCamera_?std::sin(seconds*.10F)*.055F:0.0F;
-    const Vec3 eye{std::sin(orbit)*96.0F,48.0F,std::cos(orbit)*96.0F};
-    const Vec3 target{0,5.2F,0};
+    const Vec3 matchTarget{matchCameraX_,1.0F,matchCameraZ_};
+    const Vec3 eye=matchActive_
+        ? Vec3{matchCameraX_+std::sin(orbit)*2.0F,27.0F,matchCameraZ_-43.0F}
+        : Vec3{std::sin(orbit)*96.0F,48.0F,std::cos(orbit)*96.0F};
+    const Vec3 target=matchActive_?matchTarget:Vec3{0,5.2F,0};
     const Mat4 view=lookAt(eye,target,{0,1,0});
-    const Mat4 projection=perspective(48.0F*kPi/180.0F,static_cast<float>(width_)/height_,.1F,240.0F);
+    const Mat4 projection=perspective((matchActive_?54.0F:48.0F)*kPi/180.0F,static_cast<float>(width_)/height_,.1F,240.0F);
     const Mat4 vp=multiply(projection,view);
     const Mat4 world=identity();
 
@@ -350,6 +353,15 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
     matchBallHeight_=match.ball().height;
+    const int focusId=match.controlRole()==ControlRole::Player?match.controlledPlayer():-1;
+    if(focusId>=0 && focusId<MatchSimulation::kPlayerCount) {
+        const auto& focus=players[static_cast<std::size_t>(focusId)];
+        matchCameraX_=focus.position.y*0.58F+match.ball().position.y*0.42F;
+        matchCameraZ_=focus.position.x*0.58F+match.ball().position.x*0.42F;
+    } else {
+        matchCameraX_=match.ball().position.y;
+        matchCameraZ_=match.ball().position.x;
+    }
     refereePosition_={match.refereePosition().y,match.refereePosition().x};
     offsideLine_=match.offsideLine();
     offsideLineVisible_=match.offsideLineVisible();
