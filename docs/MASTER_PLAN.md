@@ -556,3 +556,34 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Adiciona textura procedural de superfície em GPU, variação de gramado, padrão de tecido, iluminação difusa e especular e parâmetros de rugosidade.
 - **Status:** IMPLEMENTADO, aguardando compilação e validação visual em dispositivo.
 - Não declarar a evolução visual como TESTADA até aprovação da compilação e teste real no Android.
+
+
+# 33. PRIMEIRA ENTREGA DO MOTOR DE PARTIDA — 2026-11-26
+
+## Núcleo de simulação C++17
+- **Status:** IMPLEMENTADO; aguardando CI e validação funcional.
+- Criado `MatchSimulation.hpp/.cpp` em módulo separado do renderizador.
+- Estado de partida: Ready, Running, Paused e Finished.
+- Inicialização determinística de 22 jogadores, 11 por equipe, com posições-base de formação.
+- Estado da bola, posse, velocidade, atrito, limites do campo e reposição após cruzar a linha de gol.
+- Relógio de partida que só avança em estado Running.
+- Atualização fixa limitada a 50 ms por chamada para reduzir instabilidade em quadros lentos.
+- IA inicial de movimentação: perseguição da bola, avanço do portador, apoio e recomposição defensiva.
+- Ações nativas: passe direcionado a companheiro, chute, drible, corrida e tentativa de desarme com validação de posse/proximidade.
+- Controle de expulsão de jogador e contagem de atletas ativos.
+- Modo espectador sinalizado no núcleo e bloqueio de comando manual para equipe do usuário quando ativo.
+- Integração do núcleo ao GameEngine e inclusão no CMake Android.
+- Ciclo de vida de partida exposto por JNI e wrappers Java/GameSurface: iniciar, pausar, retomar e reiniciar. Ainda não há controles visuais de partida conectados ao lobby.
+- Testes nativos adicionados para 22 jogadores, estados, congelamento real do relógio/posições durante pausa, expulsão, bloqueio de comandos em espectador e reinicialização.
+- Workflow atualizado para compilar e executar os testes nativos antes do APK Debug.
+
+## Limitações explícitas desta entrega
+- Os jogadores simulados ainda não são renderizados nas posições dinâmicas do MatchSimulation. O lobby permanece sendo a cena visual anterior.
+- A IA é uma base de movimentação e posicionamento; ainda não representa futebol tático completo nem 11 contra 11 competitivo.
+- Passe e chute aplicam velocidade à bola, mas ainda não há recepção avançada, goleiros, colisões completas, faltas ou cálculo de gol com geometria de baliza.
+- Modo espectador ainda não possui seleção de modo/tela; o núcleo apenas bloqueia comandos humanos na equipe configurada.
+- Arbitragem configurável, faltas/cartões, impedimento e linha visual, reações de protesto, VAR, replay em câmera lenta, HUD e controles touchscreen permanecem pendentes.
+- A atualização do núcleo está integrada ao GameEngine, mas a partida ainda não é iniciada automaticamente nem existe botão de início na interface.
+
+## Evidência
+- A validação será registrada após a execução do workflow Android no commit desta seção. A existência dos testes não significa que já passaram.
