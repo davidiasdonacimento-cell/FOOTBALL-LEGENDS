@@ -74,6 +74,9 @@ public final class MatchUi extends FrameLayout {
     private void buildPlayerControls() {
         actionPanel.addView(label("ESCOLHA O JOGADOR QUE VOCÊ VAI CONTROLAR", 11, Color.WHITE, true));
         Spinner squad = new Spinner(context);
+        keeperActions = new LinearLayout(context);
+        keeperActions.setGravity(Gravity.CENTER);
+        keeperActions.setVisibility(View.GONE);
         String[] squadOptions = new String[11];
         squadOptions[0] = "GOLEIRO • CAMISA 1";
         for (int i = 1; i < squadOptions.length; i++) squadOptions[i] = "JOGADOR • CAMISA " + (i + 1);
@@ -113,9 +116,6 @@ public final class MatchUi extends FrameLayout {
         }
         actionPanel.addView(actions);
 
-        keeperActions = new LinearLayout(context);
-        keeperActions.setGravity(Gravity.CENTER);
-        keeperActions.setVisibility(View.GONE);
         Button dive = button("GOLEIRO • MERGULHO / DEFESA");
         dive.setOnClickListener(v -> surface.playerAction(5, -1, 1.0f, 0.0f));
         Button catchBall = button("GOLEIRO • SEGURAR BOLA");
