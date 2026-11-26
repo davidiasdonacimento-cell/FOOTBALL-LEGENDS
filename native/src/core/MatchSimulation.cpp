@@ -194,8 +194,19 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
     const Vec2 direction = normalized({directionX, directionY});
     switch (action) {
         case PlayerAction::Pass:
-            if (ball_.owner != playerId || targetPlayerId < 0 || targetPlayerId >= kPlayerCount ||
-                players_[targetPlayerId].team != player.team || players_[targetPlayerId].sentOff) return false;
+            if (ball_.owner != playerId) return false;
+            if (targetPlayerId < 0) {
+                float best = 1.0e9f;
+                for (int i = player.team * 11; i < player.team * 11 + 11; ++i) {
+                    if (i == playerId || players_[i].sentOff) continue;
+                    const Vec2 delta{players_[i].position.x - player.position.x, players_[i].position.y - player.position.y};
+                    const float forward = delta.x * direction.x + delta.y * direction.y;
+                    if (forward <= 0.0f) continue;
+                    const float d = distance(players_[i].position, player.position);
+                    if (d < best) { best = d; targetPlayerId = i; }
+                }
+            }
+            if (targetPlayerId < 0 || targetPlayerId >= kPlayerCount || players_[targetPlayerId].team != player.team || players_[targetPlayerId].sentOff) return false;
             ball_.owner = -1;
             ball_.lastTouchTeam = player.team;
             ball_.position = player.position;
