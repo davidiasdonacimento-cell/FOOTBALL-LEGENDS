@@ -10,6 +10,7 @@ set(FOOTBALL_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../../native")
 add_library(football_legends SHARED
     native-lib.cpp
     ${FOOTBALL_ROOT}/src/core/GameEngine.cpp
+    ${FOOTBALL_ROOT}/src/core/MatchSimulation.cpp
     ${FOOTBALL_ROOT}/src/render/Renderer.cpp
     ${FOOTBALL_ROOT}/src/lobby/LobbyScene.cpp
 )
