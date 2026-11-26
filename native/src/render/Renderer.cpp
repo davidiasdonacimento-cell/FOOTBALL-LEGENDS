@@ -249,12 +249,14 @@ void Renderer::render() {
     const float seconds=std::chrono::duration<float>(Clock::now()-start).count();
     const float orbit=cinematicCamera_?std::sin(seconds*.10F)*.055F:0.0F;
     const Vec3 matchTarget{matchCameraX_,1.0F,matchCameraZ_};
+    // Close broadcast camera: keep the ball large and readable while
+    // preserving enough pitch context to anticipate the next pass.
     const Vec3 eye=matchActive_
-        ? Vec3{matchCameraX_+std::sin(orbit)*2.0F,27.0F,matchCameraZ_-43.0F}
+        ? Vec3{matchCameraX_+std::sin(orbit)*1.0F,16.5F,matchCameraZ_-27.0F}
         : Vec3{std::sin(orbit)*96.0F,48.0F,std::cos(orbit)*96.0F};
     const Vec3 target=matchActive_?matchTarget:Vec3{0,5.2F,0};
     const Mat4 view=lookAt(eye,target,{0,1,0});
-    const Mat4 projection=perspective((matchActive_?54.0F:48.0F)*kPi/180.0F,static_cast<float>(width_)/height_,.1F,240.0F);
+    const Mat4 projection=perspective((matchActive_?49.0F:48.0F)*kPi/180.0F,static_cast<float>(width_)/height_,.1F,240.0F);
     const Mat4 vp=multiply(projection,view);
     const Mat4 world=identity();
 
@@ -351,7 +353,8 @@ void Renderer::render() {
         const Mat4 refereeModel=modelAt(refereePosition_.x,0.0F,refereePosition_.y,0.0F);
         const Mat4 refereeMvp=multiply(vp,refereeModel);
         const Mat4 refereeBones[5]={identity(),rotationAroundX({-.20F,1.31F,0},.45F),rotationAroundX({.20F,1.31F,0},-.45F),identity(),identity()};
-        glUniform3f(teamTintLocation_,.12F,.15F,.20F);
+        // High-visibility referee kit, distinct from both teams.
+        glUniform3f(teamTintLocation_,1.0F,.78F,.12F);
         glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,refereeBones[0].v.data());
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,refereeModel.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,refereeMvp.v.data());

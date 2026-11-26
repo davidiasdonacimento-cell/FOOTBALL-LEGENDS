@@ -845,7 +845,7 @@ void MatchSimulation::updateReferee(float dt) {
     target.y = std::max(-53.0f, std::min(53.0f, target.y));
     const Vec2 direction = normalized({target.x - refereePosition_.x, target.y - refereePosition_.y});
     const float distanceToTarget = distance(target, refereePosition_);
-    const float step = std::min(distanceToTarget, 5.0f * dt);
+    const float step = std::min(distanceToTarget, 7.2f * dt);
     refereePosition_.x += direction.x * step;
     refereePosition_.y += direction.y * step;
 }

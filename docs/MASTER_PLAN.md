@@ -884,3 +884,15 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - CI deve validar compilação Java/Android, JNI e testes nativos existentes.
 - A sensação do analógico, a escala dos botões, a leitura da bola, a visibilidade do árbitro e a resposta da câmera precisam ser testadas no telefone.
 - A IA existente possui posicionamento tático e decisões autônomas de passe/chute/condução/cruzamento, mas não está comprovado que o comportamento visual de uma partida completa esteja equilibrado; isso requer testes dedicados de partida e ajuste após observação.
+
+
+# 49. CÂMERA PRÓXIMA DA BOLA, ÁRBITRO VISÍVEL E TEMPO DA PARTIDA — 2026-11-26
+
+- **Status:** implementação enviada para CI; teste visual em Android físico pendente.
+- Câmera da partida aproximada: distância e altura reduzidas, campo de visão ajustado para destacar bola e disputa sem perder completamente o contexto.
+- Rastreamento continua centrado na bola, com leve ponderação do atleta controlado no modo jogador.
+- Árbitro recebe uniforme amarelo de alta visibilidade e aumenta a velocidade de reposicionamento para acompanhar a jogada.
+- Botão de velocidade fica acessível no topo durante a partida.
+- Opções simplificadas para exatamente dois ritmos: câmera lenta (0,5×) e normal (1×); ambas usam o controle de escala de tempo já integrado ao motor.
+- A câmera continua seguindo a bola também no modo árbitro.
+- Ainda precisa validar no aparelho se o enquadramento não corta jogadores nas laterais e se o árbitro consegue acompanhar mudanças rápidas de posse.

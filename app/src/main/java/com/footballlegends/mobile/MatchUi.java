@@ -44,6 +44,9 @@ public final class MatchUi extends FrameLayout {
         Button mode = button("ÁRBITRO");
         mode.setOnClickListener(v -> setRole(role == 0 ? 1 : 0));
         top.addView(mode, new LinearLayout.LayoutParams(dp(94), dp(40)));
+        Button speed = button("1×");
+        speed.setOnClickListener(v -> showSpeedSelector());
+        top.addView(speed, new LinearLayout.LayoutParams(dp(54), dp(40)));
         Button pause = button("Ⅱ");
         pause.setOnClickListener(v -> showPauseMenu());
         top.addView(pause, new LinearLayout.LayoutParams(dp(48), dp(40)));
@@ -263,9 +266,9 @@ public final class MatchUi extends FrameLayout {
     }
 
     private void showSpeedSelector() {
-        String[] labels = {"0,5×", "1× NORMAL", "1,5×", "2×"};
-        float[] values = {.5f, 1f, 1.5f, 2f};
-        new AlertDialog.Builder(context).setTitle("VELOCIDADE")
+        String[] labels = {"CÂMERA LENTA  •  0,5×", "NORMAL  •  1×"};
+        float[] values = {.5f, 1f};
+        new AlertDialog.Builder(context).setTitle("TEMPO DA PARTIDA")
             .setItems(labels, (d, which) -> surface.setMatchTimeScale(values[which]))
             .setNegativeButton("FECHAR", null).show();
     }
