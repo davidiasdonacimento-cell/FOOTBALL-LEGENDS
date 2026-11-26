@@ -102,6 +102,7 @@ private:
     float playerSpeedMultiplier_{1.0f};
     MatchEvent event_{MatchEvent::None};
     MatchEvent eventBeforeVar_{MatchEvent::None};
+    Ball ballBeforeVar_{};
     int eventPlayer_{-1};
     int restartTeam_{-1};
     Vec2 restartPosition_{};
