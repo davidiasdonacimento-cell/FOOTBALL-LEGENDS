@@ -9,7 +9,7 @@ enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
 enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
 enum class ControlRole : std::uint8_t { Player, Referee };
 enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal };
-enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch };
+enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch, KeeperFall, KeeperRecover, KeeperHighCatch };
 
 struct Player {
     int id{0};
@@ -30,6 +30,8 @@ struct Ball {
     Vec2 velocity{};
     int owner{-1};
     int lastTouchTeam{-1};
+    float height{0.0f};
+    float verticalVelocity{0.0f};
 };
 
 class MatchSimulation final {
