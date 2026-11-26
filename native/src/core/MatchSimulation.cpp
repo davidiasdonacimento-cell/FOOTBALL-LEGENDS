@@ -136,14 +136,14 @@ void MatchSimulation::updateTeam(float dt, int team) {
     const int chaser = nearestPlayer(team, ball_.position);
     for (int i = team * 11; i < team * 11 + 11; ++i) {
         Player& p = players_[i];
+        if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
         if (p.animationSeconds > 0.0f) {
             p.animationSeconds = std::max(0.0f, p.animationSeconds - dt);
             if (p.animationSeconds == 0.0f && !p.sentOff) p.animation = PlayerAnimation::None;
         }
         if (p.sentOff) {
             p.velocity = {};
-            if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
-            else p.position.y += (p.position.y >= 0.0f ? 1.0f : -1.0f) * 2.8f * dt;
+            if (p.protestSeconds <= 0.0f) p.position.y += (p.position.y >= 0.0f ? 1.0f : -1.0f) * 2.8f * dt;
             continue;
         }
         Vec2 target = p.position;
@@ -336,6 +336,9 @@ bool MatchSimulation::issueCard(int playerId, int cardType) {
     if (cardType == 1) {
         ++players_[playerId].yellowCards;
         if (players_[playerId].yellowCards >= 2) return setPlayerSentOff(playerId, true);
+        players_[playerId].animation = PlayerAnimation::Protest;
+        players_[playerId].animationSeconds = 1.35f;
+        players_[playerId].protestSeconds = 1.35f;
         return true;
     }
     if (cardType == 2) return setPlayerSentOff(playerId, true);
