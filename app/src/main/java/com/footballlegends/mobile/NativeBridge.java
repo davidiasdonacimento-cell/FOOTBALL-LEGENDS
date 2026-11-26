@@ -14,5 +14,5 @@ public final class NativeBridge {
     public static native void nativeDraw(long engineHandle);
     public static native void nativeSetLobbyFormation(long engineHandle, int formation);
     public static native void nativeSetCinematicCamera(long engineHandle, boolean enabled);
-    public static native void nativeDestroy(long engineHandle);
+    public static native void nativeStartMatch(long engineHandle);\n    public static native void nativePauseMatch(long engineHandle);\n    public static native void nativeResumeMatch(long engineHandle);\n    public static native void nativeResetMatch(long engineHandle);\n    public static native void nativeDestroy(long engineHandle);
 }
