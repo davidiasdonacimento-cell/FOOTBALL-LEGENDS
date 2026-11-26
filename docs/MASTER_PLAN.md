@@ -630,3 +630,23 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - O VAR atual guarda e restaura o estado da bola e a decisão da arbitragem; não há replay multiângulo nem análise automática de imagens.
 - A defesa do goleiro usa distância e movimento simplificados; ainda faltam colisão física completa, trajetória de voo e animações de queda/recuperação mais detalhadas.
 - CI e compilação APK desta revisão ainda precisam terminar; nenhum teste em aparelho foi realizado.
+
+
+# 36. CICLO COMPLETO DE DEFESA DO GOLEIRO — 2026-11-26
+
+## Implementação desta revisão
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando testes de CI.
+- A bola possui altura e velocidade vertical no núcleo, com gravidade e quique simplificado.
+- O renderer posiciona a bola conforme a altura calculada pelo motor.
+- O mergulho deixa de teleportar o goleiro: aplica deslocamento temporal com velocidade e limites da área.
+- O ciclo passa por mergulho, queda e recuperação, com temporizadores e retorno ao estado neutro.
+- A ação de agarrar aceita bolas dentro de uma faixa de altura ampliada e diferencia a pose de defesa alta.
+- A IA pode interceptar uma bola próxima e dentro do alcance vertical do goleiro.
+- Testes adicionados para captura de bola alta, trajetória aérea e progressão de queda/recuperação.
+
+## Limites e validação
+- Animações procedurais, sem captura de movimento.
+- Física vertical simplificada; ainda sem colisões 3D completas com traves, rede, mãos e corpo.
+- IA ainda não prevê trajetórias complexas nem escolhe entre espalmar, socar e encaixar por atributos.
+- Validação visual em Android permanece pendente; CI não substitui teste físico.
+- A FASE 3 permanece **EM DESENVOLVIMENTO** até inspeção visual e testes no dispositivo.
