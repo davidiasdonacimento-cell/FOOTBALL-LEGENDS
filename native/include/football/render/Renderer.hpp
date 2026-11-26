@@ -3,6 +3,7 @@
 #include <GLES3/gl3.h>
 
 #include "football/lobby/LobbyScene.hpp"
+#include "football/core/MatchSimulation.hpp"
 
 namespace football {
 
@@ -17,6 +18,7 @@ public:
     void initialize();
     void resize(int width, int height);
     void render();
+    void setMatchSnapshot(const MatchSimulation& match);
     void setFormation(int formation);
     void setCinematicCamera(bool enabled);
 
@@ -32,6 +34,8 @@ private:
     GLuint environmentBuffer_{0};
     GLuint playerVao_{0};
     GLuint playerBuffer_{0};
+    GLuint ballVao_{0};
+    GLuint ballBuffer_{0};
     GLint mvpLocation_{-1};
     GLint modelLocation_{-1};
     GLint cameraLocation_{-1};
@@ -43,6 +47,9 @@ private:
     int height_{1};
     bool initialized_{false};
     bool cinematicCamera_{true};
+    bool matchActive_{false};
+    std::array<LobbyPlayerPosition, MatchSimulation::kPlayerCount> matchPositions_{};
+    Vec2 matchBallPosition_{};
 };
 
 } // namespace football
