@@ -24,6 +24,7 @@ public final class MatchUi extends FrameLayout {
     private int role = 0;
     private int selectedPlayer = 10;
     private boolean whistlePaused = false;
+    private Runnable exitAction;
 
     public MatchUi(Context context, GameSurface surface) {
         super(context);
@@ -56,6 +57,8 @@ public final class MatchUi extends FrameLayout {
         root.addView(actionPanel, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         setRole(0);
     }
+
+    public void setExitAction(Runnable action) { exitAction = action; }
 
     public void setRole(int newRole) {
         role = newRole == 1 ? 1 : 0;
@@ -151,6 +154,8 @@ public final class MatchUi extends FrameLayout {
     }
 
     private void showPauseMenu() {
+        surface.pauseMatch();
+        whistlePaused = true;
         String[] options = {"CONTINUAR", "TROCAR PARA MODO JOGADOR", "TROCAR PARA MODO ÁRBITRO", "ENCERRAR PARTIDA"};
         new AlertDialog.Builder(context).setTitle("PAUSA DA PARTIDA").setItems(options, (dialog, which) -> {
             if (which == 0) {
@@ -161,8 +166,9 @@ public final class MatchUi extends FrameLayout {
                 surface.resumeMatch();
                 whistlePaused = false;
             } else {
-                surface.pauseMatch();
+                surface.resetMatch();
                 setVisibility(GONE);
+                if (exitAction != null) exitAction.run();
             }
         }).show();
     }
