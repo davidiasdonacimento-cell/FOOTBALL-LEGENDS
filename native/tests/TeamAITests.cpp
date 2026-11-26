@@ -78,9 +78,10 @@ int main() {
                                                     football::AIDifficulty::Normal};
     assert(football::TeamAI::decideBallAction(crossDecision) == football::AIBallAction::Cross);
     football::AIBallDecisionContext easyShot = shotDecision;
+    easyShot.playerPosition.x = 20.0f; // 16 m do gol: fora do limite Fácil (14 m).
     easyShot.difficulty = football::AIDifficulty::Easy;
     assert(football::TeamAI::decideBallAction(easyShot) != football::AIBallAction::Shoot);
-    football::AIBallDecisionContext hardShot = shotDecision;
+    football::AIBallDecisionContext hardShot = easyShot;
     hardShot.difficulty = football::AIDifficulty::Hard;
     assert(football::TeamAI::decideBallAction(hardShot) == football::AIBallAction::Shoot);
 
