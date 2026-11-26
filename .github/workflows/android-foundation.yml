@@ -63,6 +63,7 @@ jobs:
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
             -Inative/include \
+            native/src/core/MatchSimulation.cpp \
             native/src/ai/TeamAI.cpp \
             native/tests/TeamAITests.cpp \
             -o /tmp/team-ai-tests

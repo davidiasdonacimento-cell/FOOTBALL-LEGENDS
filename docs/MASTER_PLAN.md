@@ -756,7 +756,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 42. FASE 6 — PRIMEIRA CAMADA DE IA TÁTICA — 2026-11-26
 
 ## Implementação preparada nesta revisão
-- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando o workflow único desta revisão.
+- **Status:** IMPLEMENTADO NO CÓDIGO; primeira validação CI falhou por erro de ligação no comando dos testes (faltava incluir `MatchSimulation.cpp`). Workflow corrigido em commit separado; nova validação pendente.
 - Criado módulo separado `TeamAI.hpp/.cpp`, sem concentrar a lógica tática no renderizador.
 - A IA passa a calcular alvos diferentes por função: goleiro, linha defensiva, meio-campo e atacantes.
 - A linha defensiva ajusta profundidade conforme posse e avanço da bola; meio-campistas oferecem apoio e cobertura; atacantes procuram profundidade e largura.
