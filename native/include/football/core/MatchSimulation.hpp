@@ -89,6 +89,9 @@ public:
 private:
     void initializeTeams();
     void updateTeam(float dt, int team);
+    void updateAutonomousDecision(float dt);
+    bool executeCommand(int playerId, PlayerAction action, int targetPlayerId,
+                        float directionX, float directionY, bool fromAI);
     void updateBall(float dt);
     void updateReferee(float dt);
     void registerFoul(int playerId);
@@ -107,6 +110,8 @@ private:
     int scores_[2]{0, 0};
     bool spectatorMode_{false};
     TacticalStyle tacticalStyles_[2]{TacticalStyle::Balanced, TacticalStyle::Balanced};
+    std::array<float, kPlayerCount> aiDecisionCooldown_{};
+    std::array<bool, kPlayerCount> aiCarryIntent_{};
     ControlRole controlRole_{ControlRole::Player};
     int controlledPlayer_{10};
     Vec2 playerInput_{};

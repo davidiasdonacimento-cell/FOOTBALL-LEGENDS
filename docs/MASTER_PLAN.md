@@ -731,7 +731,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 41. FASE 5 — REINÍCIOS, VANTAGEM, PÊNALTIS E VAR — 2026-11-26
 
 ## Escopo implementado nesta revisão
-- **Status:** implementação em validação. Os testes já avançaram pelos reinícios; a terceira execução encontrou um snapshot do placar capturado depois do gol no fluxo de VAR. O snapshot agora é guardado antes de incrementar o placar.
+- **Status:** TESTADO em CI na execução `45823163280`; os testes nativos de partida e o APK Debug foram aprovados. A validação em Android físico permanece pendente.
 - Bola que cruza a linha lateral gera lateral para a equipe adversária ao último toque.
 - Bola que cruza a linha de fundo fora da baliza gera escanteio quando o último toque é da defesa; caso contrário, tiro de meta para a defesa.
 - Reinícios posicionam a bola nas zonas correspondentes e escolhem cobrador ativo; tiro de meta prioriza o goleiro, usando atleta ativo alternativo se ele foi expulso.
@@ -756,7 +756,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 42. FASE 6 — PRIMEIRA CAMADA DE IA TÁTICA — 2026-11-26
 
 ## Implementação preparada nesta revisão
-- **Status:** IMPLEMENTADO NO CÓDIGO; a ligação dos testes foi corrigida. A segunda execução revelou uma expectativa incorreta no teste de posicionamento: o papel 9 é o atacante do lado direito e deve ter coordenada Y positiva. O caso central foi ajustado para o papel 8 e foi adicionada uma verificação explícita de simetria entre os dois lados. Nova validação pendente.
+- **Status:** TESTADO em CI na execução `45823163280`; testes de partida, IA tática e estádio passaram, e o APK Debug foi montado e enviado como artefato. A validação visual e de desempenho em Android físico permanece pendente.
 - Criado módulo separado `TeamAI.hpp/.cpp`, sem concentrar a lógica tática no renderizador.
 - A IA passa a calcular alvos diferentes por função: goleiro, linha defensiva, meio-campo e atacantes.
 - A linha defensiva ajusta profundidade conforme posse e avanço da bola; meio-campistas oferecem apoio e cobertura; atacantes procuram profundidade e largura.
@@ -775,3 +775,23 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Níveis de dificuldade, atributos individuais influenciando decisões, comportamento de substitutos e ajuste dinâmico de formação permanecem pendentes.
 - Os testes validam a lógica matemática e integração nativa; ainda é necessário validar comportamento visual e desempenho no Android físico.
 - A FASE 6 permanece EM DESENVOLVIMENTO; esta entrega não representa IA completa nem jogo competitivo 11 contra 11.
+
+
+# 43. FASE 6 — DECISÕES AUTÔNOMAS DO PORTADOR DA BOLA — 2026-11-26
+
+## Implementação
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando uma execução única do CI.
+- TeamAI agora decide entre passe, chute e condução por uma função determinística e separada do motor de partida.
+- A decisão considera distância e corredor até o gol, pressão adversária, companheiro em progressão e estilo tático.
+- A IA procura companheiros em posição adiantada e avalia a pressão próxima do receptor.
+- O portador controlado pelo usuário não recebe decisões autônomas no modo de jogador.
+- Em modo espectador, modo árbitro ou quando outro atleta da equipe está com a bola, a IA pode assumir decisões do portador.
+- A condução mantém a posse e desloca o atleta em direção ao gol; as decisões têm intervalo de 0,62 segundo para evitar spam.
+- O comando interno reutiliza as validações existentes de passe, chute e impedimento.
+- Testes adicionados para chute, passe, condução, contexto inválido, ação autônoma da equipe adversária e preservação do controle humano.
+
+## Limitações
+- Ainda não há cruzamentos contextuais, fintas encadeadas, seleção de tipo de passe, finalização por atributos ou decisões baseadas em personalidade.
+- A avaliação de linha de passe e pressão é geométrica e simplificada.
+- Desmarcação coordenada, cobertura, marcação por zona/homem e decisão dos jogadores sem bola ainda precisam evoluir.
+- Testes nativos não comprovam equilíbrio ou desempenho visual em Android físico.

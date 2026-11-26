@@ -63,6 +63,34 @@ int main() {
         }
     }
 
+
+    football::AIBallDecisionContext shotDecision{0, 10, {24.0f, 0.0f}, 9, 5.0f, 8.0f, 6.0f, false,
+                                                   football::TacticalStyle::Balanced};
+    assert(football::TeamAI::decideBallAction(shotDecision) == football::AIBallAction::Shoot);
+    football::AIBallDecisionContext passDecision{0, 6, {0.0f, 0.0f}, 8, 9.0f, 7.0f, 2.5f, true,
+                                                   football::TacticalStyle::Balanced};
+    assert(football::TeamAI::decideBallAction(passDecision) == football::AIBallAction::Pass);
+    football::AIBallDecisionContext dribbleDecision{1, 9, {-5.0f, 2.0f}, -1, 0.0f, 0.0f, 8.0f, false,
+                                                      football::TacticalStyle::CounterAttack};
+    assert(football::TeamAI::decideBallAction(dribbleDecision) == football::AIBallAction::Dribble);
+    football::AIBallDecisionContext invalidDecision{-1, 20, {}, -1, 0.0f, 0.0f, 0.0f, false,
+                                                      football::TacticalStyle::Balanced};
+    assert(football::TeamAI::decideBallAction(invalidDecision) == football::AIBallAction::Pass);
+
+    football::MatchSimulation autonomousMatch;
+    autonomousMatch.start();
+    football::MatchSimulationTestAccess::setPlayer(autonomousMatch, 21, {24.0f, 0.0f});
+    football::MatchSimulationTestAccess::setBall(autonomousMatch, {24.0f, 0.0f}, 21);
+    for (int i = 0; i < 16; ++i) autonomousMatch.update(0.05f);
+    assert(autonomousMatch.ball().owner != 21 || autonomousMatch.ball().velocity.x < 0.0f);
+
+    football::MatchSimulation humanControl;
+    humanControl.start();
+    football::MatchSimulationTestAccess::setPlayer(humanControl, 10, {24.0f, 0.0f});
+    football::MatchSimulationTestAccess::setBall(humanControl, {24.0f, 0.0f}, 10);
+    for (int i = 0; i < 16; ++i) humanControl.update(0.05f);
+    assert(humanControl.ball().owner == 10);
+
     MatchSimulation match;
     assert(match.tacticalStyle(0) == TacticalStyle::Balanced);
     assert(match.setTacticalStyle(0, TacticalStyle::HighPress));

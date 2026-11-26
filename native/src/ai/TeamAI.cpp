@@ -85,4 +85,30 @@ float TeamAI::movementSpeedMultiplier(const TeamAIContext& c) {
     }
 }
 
+
+AIBallAction TeamAI::decideBallAction(const AIBallDecisionContext& c) {
+    if (c.team < 0 || c.team > 1 || c.role < 0 || c.role >= 11)
+        return AIBallAction::Pass;
+    const float direction = c.team == 0 ? 1.0f : -1.0f;
+    const float progress = c.playerPosition.x * direction;
+    const float goalDistance = 36.0f - progress;
+    const float lateralDistance = std::fabs(c.playerPosition.y);
+    const bool shootingRange = goalDistance <= 18.0f && lateralDistance <= 19.0f;
+    const bool shotWindow = !c.forwardLaneBlocked || goalDistance <= 11.0f;
+    if (shootingRange && shotWindow && c.nearestOpponentDistance >= 1.8f)
+        return AIBallAction::Shoot;
+    const bool forwardOption = c.bestTeammateId >= 0 &&
+        c.bestTeammateProgress >= 2.0f && c.bestTeammatePressure >= 2.0f;
+    const bool underPressure = c.nearestOpponentDistance < 5.0f;
+    if (forwardOption && (underPressure || c.forwardLaneBlocked ||
+                          goalDistance > 21.0f ||
+                          c.style == TacticalStyle::Possession))
+        return AIBallAction::Pass;
+    if (c.nearestOpponentDistance >= 2.4f && goalDistance > 8.0f &&
+        !c.forwardLaneBlocked)
+        return AIBallAction::Dribble;
+    if (c.bestTeammateId >= 0) return AIBallAction::Pass;
+    return AIBallAction::Dribble;
+}
+
 } // namespace football
