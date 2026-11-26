@@ -513,3 +513,46 @@ FOOTBALL LEGENDS deverá ser um jogo de futebol mobile 3D completo, com:
 
 ## REGRA DE EVIDÊNCIA
 Uma compilação CI aprovada comprova que o projeto compilou e que o artefato foi gerado. Ela não comprova, isoladamente, qualidade visual, ausência de crash em aparelho físico ou funcionamento de recursos que ainda dependem de fases posteriores.
+
+
+# 32. REQUISITOS ADICIONAIS DE GAMEPLAY E ARBITRAGEM — 2026-11-26
+
+Solicitação do usuário para integrar às fases de gameplay, futebol profissional, IA, animações e modos:
+
+## Arbitragem configurável
+- Incluir opção real de ativar/desativar arbitragem nas configurações de cada partida.
+- Com arbitragem ativa: aplicar regras de faltas, vantagem, cartões, expulsões, impedimento e VAR conforme os sistemas implementados.
+- A opção não poderá ser apenas visual: deverá alterar efetivamente as decisões do motor da partida.
+- Definir com o usuário o comportamento exato do modo quando a arbitragem estiver desativada antes de integrar a configuração final.
+
+## Reações e cenas de arbitragem
+- Jogadores devem reagir a faltas, cartões amarelos/vermelhos e decisões contestadas.
+- Após expulsão, permitir animação de protesto/reclamação do jogador, com legenda contextual quando apropriado (ex.: jogador contestando a decisão).
+- Reações devem ser controladas por eventos reais da arbitragem, sem tocar animações aleatórias desconectadas do lance.
+- O sistema de animação deve permitir transições, interrupções e retorno ao estado de jogo.
+
+## Impedimento visual
+- Mostrar linha de referência alinhada ao penúltimo defensor no instante do passe.
+- A linha deve acompanhar a perspectiva da câmera e destacar atacante/defensor em situação relevante.
+- O overlay só aparece durante revisão/indicação de impedimento, não como decoração permanente.
+- A decisão deve vir do cálculo real de impedimento.
+
+## Controle de partida e espectador
+- Pausar de verdade: congelar relógio, IA, física, bola e eventos enquanto pausado.
+- Modo espectador: partida completa 11 contra 11, ambas as equipes controladas por IA.
+- Permitir alternar entre assistir e controlar equipe somente se os controles e a simulação estiverem integrados.
+- Não expor estes modos como funcionais antes da implementação e dos testes.
+
+## Dependências e ordem
+- Campo, bola, jogadores e câmera: FASE 3.
+- Física, ações e regras de jogo: FASE 4.
+- Arbitragem, cartões, VAR e impedimento: FASE 5.
+- IA 11 contra 11 e comportamento tático: FASE 6.
+- Animações de reação e conteúdo de jogadores: FASE 7, integradas aos eventos das fases anteriores.
+- Pausa, modo espectador e seleção de modos: FASE 8, apoiados pelos sistemas anteriores.
+
+## Atualização visual do lobby
+- Commit `b35d9f261bca27549184611df4bfd558ecfeca4c` adiciona rig articulado de cinco grupos ósseos (tronco/cabeça e quatro membros animados por matrizes de osso) e animação procedural de repouso.
+- Adiciona textura procedural de superfície em GPU, variação de gramado, padrão de tecido, iluminação difusa e especular e parâmetros de rugosidade.
+- **Status:** IMPLEMENTADO, aguardando compilação e validação visual em dispositivo.
+- Não declarar a evolução visual como TESTADA até aprovação da compilação e teste real no Android.
