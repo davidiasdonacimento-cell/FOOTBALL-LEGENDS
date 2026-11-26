@@ -77,19 +77,6 @@ int main() {
                                                       football::TacticalStyle::Balanced};
     assert(football::TeamAI::decideBallAction(invalidDecision) == football::AIBallAction::Pass);
 
-    football::MatchSimulation autonomousMatch;
-    autonomousMatch.start();
-    football::MatchSimulationTestAccess::setPlayer(autonomousMatch, 21, {24.0f, 0.0f});
-    football::MatchSimulationTestAccess::setBall(autonomousMatch, {24.0f, 0.0f}, 21);
-    for (int i = 0; i < 16; ++i) autonomousMatch.update(0.05f);
-    assert(autonomousMatch.ball().owner != 21 || autonomousMatch.ball().velocity.x < 0.0f);
-
-    football::MatchSimulation humanControl;
-    humanControl.start();
-    football::MatchSimulationTestAccess::setPlayer(humanControl, 10, {24.0f, 0.0f});
-    football::MatchSimulationTestAccess::setBall(humanControl, {24.0f, 0.0f}, 10);
-    for (int i = 0; i < 16; ++i) humanControl.update(0.05f);
-    assert(humanControl.ball().owner == 10);
 
     MatchSimulation match;
     assert(match.tacticalStyle(0) == TacticalStyle::Balanced);

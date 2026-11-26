@@ -780,7 +780,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 43. FASE 6 — DECISÕES AUTÔNOMAS DO PORTADOR DA BOLA — 2026-11-26
 
 ## Implementação
-- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando uma execução única do CI.
+- **Status:** IMPLEMENTADO NO CÓDIGO; primeira execução falhou no teste de IA porque o teste tentou usar um helper privado declarado apenas no arquivo de testes do motor. O teste de módulo foi isolado para validar a política de decisão sem acessar esse helper; integração ponta a ponta permanece pendente de teste.
 - TeamAI agora decide entre passe, chute e condução por uma função determinística e separada do motor de partida.
 - A decisão considera distância e corredor até o gol, pressão adversária, companheiro em progressão e estilo tático.
 - A IA procura companheiros em posição adiantada e avalia a pressão próxima do receptor.
@@ -788,7 +788,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Em modo espectador, modo árbitro ou quando outro atleta da equipe está com a bola, a IA pode assumir decisões do portador.
 - A condução mantém a posse e desloca o atleta em direção ao gol; as decisões têm intervalo de 0,62 segundo para evitar spam.
 - O comando interno reutiliza as validações existentes de passe, chute e impedimento.
-- Testes adicionados para chute, passe, condução, contexto inválido, ação autônoma da equipe adversária e preservação do controle humano.
+- Testes unitários adicionados para chute, passe, condução e contexto inválido. A integração ponta a ponta e a preservação do controle humano ainda precisam de testes específicos no motor.
 
 ## Limitações
 - Ainda não há cruzamentos contextuais, fintas encadeadas, seleção de tipo de passe, finalização por atributos ou decisões baseadas em personalidade.
