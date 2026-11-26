@@ -49,10 +49,11 @@ int main() {
     football::MatchSimulationTestAccess::setBall(keeperDive, {-29.0f, 0.0f}, -1);
     assert(keeperDive.selectControlledPlayer(0));
     assert(keeperDive.command(0, football::PlayerAction::KeeperDive));
-    assert(keeperDive.ball().owner == 0);
+    assert(keeperDive.ball().owner == -1);
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperDive);
     keeperDive.update(0.05f);
-    assert(keeperDive.players()[0].animationSeconds < 0.35f);
+    assert(keeperDive.ball().owner == 0);
+    assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperCatch);
     for (int i = 0; i < 20; ++i) keeperDive.update(0.05f);
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::None);
 
