@@ -54,6 +54,8 @@ private:
     std::array<LobbyPlayerPosition, MatchSimulation::kPlayerCount> matchPositions_{};
     Vec2 matchBallPosition_{};
     float matchBallHeight_{0.0f};
+    float matchCameraX_{0.0f};
+    float matchCameraZ_{0.0f};
     Vec2 refereePosition_{};
     float offsideLine_{0.0f};
     bool offsideLineVisible_{false};
