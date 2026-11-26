@@ -9,7 +9,7 @@ static bool near(float a, float b, float epsilon = 0.001f) {
 }
 
 int main() {
-    TeamAIContext forward{0, 9, 9, {-5.0f, -30.0f}, {0.0f, 0.0f}, 0, -1, 1.0f, TacticalStyle::Balanced};
+    TeamAIContext forward{0, 8, 8, {-5.0f, -30.0f}, {0.0f, 0.0f}, 0, -1, 1.0f, TacticalStyle::Balanced};
     const Vec2 balancedRun = TeamAI::targetForPlayer(forward);
     assert(balancedRun.x > 0.0f);
     assert(balancedRun.y < 0.0f);
@@ -40,10 +40,17 @@ int main() {
     assert(near(keeperTarget.x, -32.0f));
     assert(near(keeperTarget.y, 6.4f));
 
-    TeamAIContext mirrored{1, 20, 9, {5.0f, -30.0f}, {0.0f, 0.0f}, 1, -1, 1.0f, TacticalStyle::Balanced};
+    TeamAIContext mirrored{1, 19, 8, {5.0f, -30.0f}, {0.0f, 0.0f}, 1, -1, 1.0f, TacticalStyle::Balanced};
     const Vec2 mirroredRun = TeamAI::targetForPlayer(mirrored);
     assert(near(mirroredRun.x, -balancedRun.x));
     assert(near(mirroredRun.y, balancedRun.y));
+
+    TeamAIContext rightForward = forward;
+    rightForward.playerId = 9;
+    rightForward.role = 9;
+    const Vec2 rightRun = TeamAI::targetForPlayer(rightForward);
+    assert(rightRun.y > 0.0f);
+    assert(near(rightRun.y, -balancedRun.y));
 
     for (int team = 0; team < 2; ++team) {
         for (int role = 0; role < 11; ++role) {
