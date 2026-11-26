@@ -54,6 +54,7 @@ in float vMaterial;
 uniform vec3 uCameraPosition;
 uniform vec3 uLightDirection;
 uniform sampler2D uMaterialTexture;
+uniform vec3 uTeamTint;
 out vec4 outColor;
 void main() {
     vec3 normal = normalize(vNormal);
@@ -65,7 +66,7 @@ void main() {
     float grassBand = (vMaterial < 0.5) ? (0.965 + 0.035 * sin(vWorldPosition.x * 0.62)) : 1.0;
     float fabricWeave = (vMaterial > 0.5 && vMaterial < 1.5)
         ? (0.975 + 0.025 * sin(vUv.x * 420.0) * sin(vUv.y * 360.0)) : 1.0;
-    vec3 base = vColor.rgb * grain * grassBand * fabricWeave;
+    vec3 base = vColor.rgb * uTeamTint * grain * grassBand * fabricWeave;
     float roughness = (vMaterial > 0.5 && vMaterial < 1.5) ? 0.48 : 0.82;
     vec3 halfDir = normalize(lightDir + viewDir);
     float specular = pow(max(dot(normal, halfDir), 0.0), mix(48.0, 10.0, roughness));
@@ -176,6 +177,7 @@ void Renderer::initialize() {
     lightLocation_=glGetUniformLocation(program_,"uLightDirection");
     bonesLocation_=glGetUniformLocation(program_,"uBones[0]");
     textureLocation_=glGetUniformLocation(program_,"uMaterialTexture");
+    teamTintLocation_=glGetUniformLocation(program_,"uTeamTint");
     createMaterialTexture();
     uploadScene();
     initialized_=environmentVao_!=0&&playerVao_!=0;
@@ -253,6 +255,7 @@ void Renderer::render() {
     glUniform3f(cameraLocation_,eye.x,eye.y,eye.z);
     glUniform3f(lightLocation_,-.35F,-1.0F,-.25F);
     glUniform1i(textureLocation_,0);
+    glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,materialTexture_);
     const Mat4 rootBones[5]={identity(),identity(),identity(),identity(),identity()};
@@ -283,6 +286,10 @@ void Renderer::render() {
             rotationAroundX({-.115F,.80F,0},-legSwing),
             rotationAroundX({.115F,.80F,0},legSwing)
         };
+        if(matchActive_) {
+            if(i < 11) glUniform3f(teamTintLocation_,0.28F,0.68F,1.0F);
+            else glUniform3f(teamTintLocation_,1.0F,0.32F,0.25F);
+        } else glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
         glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,bones[0].v.data());
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,model.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
@@ -291,6 +298,7 @@ void Renderer::render() {
     if(matchActive_ && ballVao_!=0) {
         const Mat4 ballModel=modelAt(matchBallPosition_.x,.24F,matchBallPosition_.y,0.0F);
         const Mat4 ballMvp=multiply(vp,ballModel);
+        glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
         glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,ballModel.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,ballMvp.v.data());
