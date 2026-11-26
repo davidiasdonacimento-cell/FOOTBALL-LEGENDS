@@ -54,9 +54,19 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
             -Inative/include \
             native/src/core/MatchSimulation.cpp \
+            native/src/ai/TeamAI.cpp \
             native/tests/MatchSimulationTests.cpp \
             -o /tmp/match-simulation-tests
           /tmp/match-simulation-tests
+
+      - name: Run native team AI tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Inative/include \
+            native/src/ai/TeamAI.cpp \
+            native/tests/TeamAITests.cpp \
+            -o /tmp/team-ai-tests
+          /tmp/team-ai-tests
 
       - name: Run native stadium scene tests
         run: |

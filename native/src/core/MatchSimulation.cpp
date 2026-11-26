@@ -1,4 +1,5 @@
 #include "football/core/MatchSimulation.hpp"
+#include "football/ai/TeamAI.hpp"
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -49,6 +50,7 @@ void MatchSimulation::reset() {
     matchSeconds_ = 0.0f;
     scores_[0] = scores_[1] = 0;
     spectatorMode_ = false;
+    tacticalStyles_[0] = tacticalStyles_[1] = TacticalStyle::Balanced;
     controlRole_ = ControlRole::Player;
     controlledPlayer_ = 10;
     playerInput_ = {};
@@ -95,6 +97,14 @@ void MatchSimulation::resume() {
 }
 void MatchSimulation::finish() { state_ = MatchState::Finished; }
 void MatchSimulation::setSpectatorMode(bool enabled) { spectatorMode_ = enabled; }
+bool MatchSimulation::setTacticalStyle(int team, TacticalStyle style) {
+    if (team < 0 || team > 1 || static_cast<unsigned int>(style) > static_cast<unsigned int>(TacticalStyle::DefensiveBlock)) return false;
+    tacticalStyles_[team] = style;
+    return true;
+}
+TacticalStyle MatchSimulation::tacticalStyle(int team) const {
+    return team >= 0 && team < 2 ? tacticalStyles_[team] : TacticalStyle::Balanced;
+}
 void MatchSimulation::setControlRole(ControlRole role) {
     controlRole_ = role;
     playerInput_ = {};
@@ -186,7 +196,6 @@ void MatchSimulation::updateTeam(float dt, int team) {
             if (p.protestSeconds <= 0.0f) p.position.y += (p.position.y >= 0.0f ? 1.0f : -1.0f) * 2.8f * dt;
             continue;
         }
-        Vec2 target = p.position;
         if (team == 0 && i == controlledPlayer_ && controlRole_ == ControlRole::Player) {
             p.velocity = {playerInput_.x * kPlayerSpeed * playerSpeedMultiplier_, playerInput_.y * kPlayerSpeed * playerSpeedMultiplier_};
             p.position.x += p.velocity.x * dt;
@@ -198,22 +207,12 @@ void MatchSimulation::updateTeam(float dt, int team) {
             p.stamina = std::max(0.0f, p.stamina - dt * (playerInput_.x != 0.0f || playerInput_.y != 0.0f ? 0.0015f : 0.0003f));
             continue;
         }
-        if (p.role == 0) {
-            const float goalX = team == 0 ? -32.0f : 32.0f;
-            target = {goalX, std::max(-12.0f, std::min(12.0f, ball_.position.y * 0.35f))};
-        } else if (i == carrier && carrierTeam == team) {
-            target = {team == 0 ? 32.0f : -32.0f, 0.0f};
-        } else if (carrierTeam != team && i == chaser) {
-            target = ball_.position;
-        } else if (carrierTeam == team) {
-            target = {p.position.x + (team == 0 ? 3.0f : -3.0f), p.position.y};
-        } else {
-            const float sign = team == 0 ? 1.0f : -1.0f;
-            target = {kFormation[p.role].x * sign * 0.82f, kFormation[p.role].y * 0.90f};
-        }
+        const TeamAIContext aiContext{team, i, p.role, p.position, ball_.position,
+                                      carrierTeam, chaser, p.stamina, tacticalStyles_[team]};
+        const Vec2 target = TeamAI::targetForPlayer(aiContext);
         Vec2 delta{target.x - p.position.x, target.y - p.position.y};
         Vec2 dir = normalized(delta);
-        const float speed = kPlayerSpeed * (p.stamina < 0.15f ? 0.72f : 1.0f);
+        const float speed = kPlayerSpeed * TeamAI::movementSpeedMultiplier(aiContext) * (p.stamina < 0.15f ? 0.72f : 1.0f);
         p.velocity = {dir.x * speed, dir.y * speed};
         p.position.x += p.velocity.x * dt;
         p.position.y += p.velocity.y * dt;

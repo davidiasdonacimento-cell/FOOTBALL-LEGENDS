@@ -751,3 +751,27 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A detecção automática de infrações permanece limitada ao desarme de alta velocidade; não há árbitro IA completo.
 - O VAR não tem replay multiângulo, linhas calibradas nem revisão automática de imagens; a decisão continua manual.
 - A aprovação de CI não substitui teste de jogabilidade, interface e desempenho em Android físico.
+
+
+# 42. FASE 6 — PRIMEIRA CAMADA DE IA TÁTICA — 2026-11-26
+
+## Implementação preparada nesta revisão
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando o workflow único desta revisão.
+- Criado módulo separado `TeamAI.hpp/.cpp`, sem concentrar a lógica tática no renderizador.
+- A IA passa a calcular alvos diferentes por função: goleiro, linha defensiva, meio-campo e atacantes.
+- A linha defensiva ajusta profundidade conforme posse e avanço da bola; meio-campistas oferecem apoio e cobertura; atacantes procuram profundidade e largura.
+- O jogador mais próximo é designado para pressionar quando a equipe não tem a posse, evitando que os 10 jogadores persigam a bola ao mesmo tempo.
+- Adicionadas estratégias configuráveis no núcleo: equilibrada, posse, contra-ataque, pressão alta e bloco defensivo.
+- Estratégia altera posicionamento e multiplicador de deslocamento; a seleção ainda não está conectada a um menu Android nesta etapa.
+- A IA do goleiro ajusta a posição lateral conforme a bola, mantendo limites de área simplificados.
+- Integração com MatchSimulation e CMake Android; os jogadores controlados pelo usuário mantêm o caminho de movimento manual.
+- Adicionados testes nativos específicos para pressão, linha defensiva, ataque em profundidade, espelhamento das equipes, limites do campo e configuração/reset de estratégia.
+- Workflow ampliado para executar os testes de IA antes da montagem do APK, na mesma execução de CI.
+
+## Limitações e trabalho restante da FASE 6
+- Ainda não há decisão autônoma de passe, chute, cruzamento, drible ou finalização pela IA; o módulo atual calcula posicionamento e deslocamento.
+- Marcação por zona/homem, cobertura coordenada, troca de marcador, linhas de impedimento e gatilhos de pressão ainda precisam evoluir.
+- A estratégia está exposta no núcleo C++, mas falta conectá-la ao menu tático Android e persistir a escolha por equipe.
+- Níveis de dificuldade, atributos individuais influenciando decisões, comportamento de substitutos e ajuste dinâmico de formação permanecem pendentes.
+- Os testes validam a lógica matemática e integração nativa; ainda é necessário validar comportamento visual e desempenho no Android físico.
+- A FASE 6 permanece EM DESENVOLVIMENTO; esta entrega não representa IA completa nem jogo competitivo 11 contra 11.

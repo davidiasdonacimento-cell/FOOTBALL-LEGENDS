@@ -5,6 +5,7 @@
 namespace football {
 
 struct Vec2 { float x{0.0f}; float y{0.0f}; };
+enum class TacticalStyle : std::uint8_t { Balanced, Possession, CounterAttack, HighPress, DefensiveBlock };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
 enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
 enum class ControlRole : std::uint8_t { Player, Referee };
@@ -68,6 +69,8 @@ public:
     float offsideLine() const { return offsideLine_; }
     bool offsideLineVisible() const { return offsideLineVisible_; }
     void setSpectatorMode(bool enabled);
+    bool setTacticalStyle(int team, TacticalStyle style);
+    TacticalStyle tacticalStyle(int team) const;
     void setControlRole(ControlRole role);
     ControlRole controlRole() const { return controlRole_; }
     bool selectControlledPlayer(int playerId);
@@ -103,6 +106,7 @@ private:
     float matchSeconds_{0.0f};
     int scores_[2]{0, 0};
     bool spectatorMode_{false};
+    TacticalStyle tacticalStyles_[2]{TacticalStyle::Balanced, TacticalStyle::Balanced};
     ControlRole controlRole_{ControlRole::Player};
     int controlledPlayer_{10};
     Vec2 playerInput_{};
