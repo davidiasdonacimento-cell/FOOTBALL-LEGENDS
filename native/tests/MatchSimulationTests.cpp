@@ -3,6 +3,12 @@
 #include <cmath>
 
 int main() {
+    football::MatchSimulation passMatch;
+    passMatch.start();
+    assert(passMatch.command(10, football::PlayerAction::Pass, -1, 1.0f, 0.0f));
+    assert(passMatch.ball().owner == -1);
+    assert(passMatch.ball().velocity.x > 0.0f);
+
     football::MatchSimulation match;
     assert(match.playerCount() == 22);
     assert(match.activePlayerCount(0) == 11 && match.activePlayerCount(1) == 11);
