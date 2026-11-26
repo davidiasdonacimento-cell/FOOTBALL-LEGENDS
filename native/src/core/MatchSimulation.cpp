@@ -262,7 +262,7 @@ void MatchSimulation::updateBall(float dt) {
                 const float normalSpeed = ball_.velocity.x * nx + ball_.velocity.y * ny;
                 ball_.velocity.x -= 1.55f * normalSpeed * nx;
                 ball_.velocity.y -= 1.55f * normalSpeed * ny;
-                ball_.position.x = goalX + nx * (kPostCollisionRadius + 0.02f);
+                ball_.position.x = goalX - std::copysign(kPostCollisionRadius + 0.02f, goalX);
                 ball_.position.y = postY + ny * (kPostCollisionRadius + 0.02f);
             }
         }

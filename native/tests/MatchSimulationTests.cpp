@@ -121,7 +121,8 @@ int main() {
     football::MatchSimulationTestAccess::setBallMotion(wideShot, {20.0f, 0.0f});
     wideShot.update(0.05f);
     assert(wideShot.score(0) == 0);
-    assert(wideShot.ball().velocity.x < 0.0f);
+    assert(wideShot.event() == football::MatchEvent::GoalKick);
+    assert(wideShot.restartTeam() == 1);
 
     football::MatchSimulation highShot;
     highShot.start();
@@ -130,7 +131,8 @@ int main() {
     football::MatchSimulationTestAccess::setBallMotion(highShot, {20.0f, 0.0f});
     highShot.update(0.05f);
     assert(highShot.score(0) == 0);
-    assert(highShot.ball().velocity.x < 0.0f);
+    assert(highShot.event() == football::MatchEvent::GoalKick);
+    assert(highShot.restartTeam() == 1);
 
     football::MatchSimulation postShot;
     postShot.start();
@@ -179,8 +181,8 @@ int main() {
 
     football::MatchSimulation throwIn;
     throwIn.start();
-    football::MatchSimulationTestAccess::setBall(throwIn, {4.0f, 54.8f}, -1);
-    football::MatchSimulationTestAccess::setBallMotion(throwIn, {0.0f, 4.0f});
+    football::MatchSimulationTestAccess::setBall(throwIn, {4.0f, 54.9f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(throwIn, {0.0f, 6.0f});
     throwIn.update(0.05f);
     assert(throwIn.state() == football::MatchState::Paused);
     assert(throwIn.event() == football::MatchEvent::ThrowIn);
