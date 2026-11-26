@@ -27,7 +27,7 @@ void GameEngine::setControlRole(int role) {
 bool GameEngine::selectPlayer(int playerId) { return match_.selectControlledPlayer(playerId); }
 bool GameEngine::movePlayer(float x, float y) { return match_.setPlayerMovement(x, y); }
 bool GameEngine::playerAction(int action, int targetPlayerId, float x, float y) {
-    if (action < 0 || action > 4) return false;
+    if (action < 0 || action > 6) return false;
     return match_.command(match_.controlledPlayer(), static_cast<PlayerAction>(action), targetPlayerId, x, y);
 }
 bool GameEngine::refereeSendOff(int playerId) {
