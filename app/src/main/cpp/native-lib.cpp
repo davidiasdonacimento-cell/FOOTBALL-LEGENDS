@@ -95,3 +95,33 @@ Java_com_footballlegends_mobile_NativeBridge_nativeRefereeIssueCard(JNIEnv*, jcl
     if (auto* engine = fromHandle(handle)) return engine->refereeIssueCard(playerId, cardType) ? JNI_TRUE : JNI_FALSE;
     return JNI_FALSE;
 }
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeCallFoul(JNIEnv*, jclass, jlong handle, jint playerId) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeCallFoul(playerId) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeCallOffside(JNIEnv*, jclass, jlong handle, jint playerId) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeCallOffside(playerId) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeRequestVar(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeRequestVar() ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeResolveVar(JNIEnv*, jclass, jlong handle, jboolean uphold) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeResolveVar(uphold == JNI_TRUE) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeRestartPlay(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeRestartPlay() ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeSetMatchTimeScale(JNIEnv*, jclass, jlong handle, jfloat scale) {
+    if (auto* engine = fromHandle(handle)) engine->setMatchTimeScale(scale);
+}
