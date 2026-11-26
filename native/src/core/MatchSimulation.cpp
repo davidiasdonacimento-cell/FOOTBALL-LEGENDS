@@ -41,6 +41,9 @@ void MatchSimulation::reset() {
     matchSeconds_ = 0.0f;
     scores_[0] = scores_[1] = 0;
     spectatorMode_ = false;
+    controlRole_ = ControlRole::Player;
+    controlledPlayer_ = 10;
+    playerInput_ = {};
     initializeTeams();
 }
 void MatchSimulation::start() {
@@ -55,6 +58,21 @@ void MatchSimulation::pause() { if (state_ == MatchState::Running) state_ = Matc
 void MatchSimulation::resume() { if (state_ == MatchState::Paused) state_ = MatchState::Running; }
 void MatchSimulation::finish() { state_ = MatchState::Finished; }
 void MatchSimulation::setSpectatorMode(bool enabled) { spectatorMode_ = enabled; }
+void MatchSimulation::setControlRole(ControlRole role) {
+    controlRole_ = role;
+    playerInput_ = {};
+}
+bool MatchSimulation::selectControlledPlayer(int playerId) {
+    if (playerId < 0 || playerId >= kPlayerCount || players_[playerId].team != 0 || players_[playerId].sentOff) return false;
+    controlledPlayer_ = playerId;
+    playerInput_ = {};
+    return true;
+}
+bool MatchSimulation::setPlayerMovement(float x, float y) {
+    if (state_ != MatchState::Running || controlRole_ != ControlRole::Player || !std::isfinite(x) || !std::isfinite(y)) return false;
+    playerInput_ = normalized({std::max(-1.0f, std::min(1.0f, x)), std::max(-1.0f, std::min(1.0f, y))});
+    return true;
+}
 
 Vec2 MatchSimulation::normalized(Vec2 v) {
     const float length = std::sqrt(v.x * v.x + v.y * v.y);
@@ -97,6 +115,14 @@ void MatchSimulation::updateTeam(float dt, int team) {
         Player& p = players_[i];
         if (p.sentOff) { p.velocity = {}; continue; }
         Vec2 target = p.position;
+        if (team == 0 && i == controlledPlayer_ && controlRole_ == ControlRole::Player) {
+            p.velocity = {playerInput_.x * kPlayerSpeed, playerInput_.y * kPlayerSpeed};
+            p.position.x += p.velocity.x * dt;
+            p.position.y += p.velocity.y * dt;
+            clampPlayer(p);
+            p.stamina = std::max(0.0f, p.stamina - dt * (playerInput_.x != 0.0f || playerInput_.y != 0.0f ? 0.0015f : 0.0003f));
+            continue;
+        }
         if (i == carrier && carrierTeam == team) {
             target = {team == 0 ? 48.0f : -48.0f, 0.0f};
         } else if (carrierTeam != team && i == chaser) {
@@ -164,7 +190,7 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
                               float directionX, float directionY) {
     if (state_ != MatchState::Running || playerId < 0 || playerId >= kPlayerCount) return false;
     Player& player = players_[playerId];
-    if (player.sentOff || (spectatorMode_ && player.team == 0)) return false;
+    if (player.sentOff || controlRole_ != ControlRole::Player || playerId != controlledPlayer_ || (spectatorMode_ && player.team == 0)) return false;
     const Vec2 direction = normalized({directionX, directionY});
     switch (action) {
         case PlayerAction::Pass:
@@ -185,6 +211,7 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
         case PlayerAction::Dribble:
         case PlayerAction::Sprint:
             if (action == PlayerAction::Sprint && player.stamina <= 0.0f) return false;
+            playerInput_ = direction;
             player.velocity = {direction.x * (action == PlayerAction::Sprint ? 9.0f : 6.5f),
                                direction.y * (action == PlayerAction::Sprint ? 9.0f : 6.5f)};
             return true;
