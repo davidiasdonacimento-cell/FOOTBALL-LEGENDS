@@ -139,7 +139,31 @@ void MatchSimulation::updateTeam(float dt, int team) {
         if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
         if (p.animationSeconds > 0.0f) {
             p.animationSeconds = std::max(0.0f, p.animationSeconds - dt);
-            if (p.animationSeconds == 0.0f && !p.sentOff) p.animation = PlayerAnimation::None;
+            if (p.animationSeconds == 0.0f && !p.sentOff) {
+                if (p.role == 0 && p.animation == PlayerAnimation::KeeperDive) {
+                    p.animation = PlayerAnimation::KeeperFall;
+                    p.animationSeconds = 0.32f;
+                } else if (p.role == 0 && p.animation == PlayerAnimation::KeeperFall) {
+                    p.animation = PlayerAnimation::KeeperRecover;
+                    p.animationSeconds = 0.55f;
+                } else p.animation = PlayerAnimation::None;
+            }
+        }
+        if (p.role == 0 && p.animation == PlayerAnimation::KeeperDive) {
+            p.position.x += p.velocity.x * dt;
+            p.position.y += p.velocity.y * dt;
+            p.position.x = std::max(-35.0f, std::min(-26.0f, p.position.x));
+            p.position.y = std::max(-15.0f, std::min(15.0f, p.position.y));
+            if (ball_.owner < 0 && ball_.height <= 2.8f && distance(p.position, ball_.position) <= 2.8f) {
+                ball_.owner = p.id; ball_.lastTouchTeam = p.team; ball_.velocity = {};
+                ball_.height = 0.0f; ball_.verticalVelocity = 0.0f;
+                p.animation = PlayerAnimation::KeeperCatch; p.animationSeconds = 0.7f;
+            }
+            continue;
+        }
+        if (p.role == 0 && (p.animation == PlayerAnimation::KeeperFall || p.animation == PlayerAnimation::KeeperRecover)) {
+            p.velocity = {};
+            continue;
         }
         if (p.sentOff) {
             p.velocity = {};
@@ -186,11 +210,20 @@ void MatchSimulation::updateBall(float dt) {
         const Player& owner = players_[ball_.owner];
         ball_.position = {owner.position.x + (owner.team == 0 ? 0.9f : -0.9f), owner.position.y};
         ball_.velocity = owner.velocity;
+        ball_.height = 0.0f; ball_.verticalVelocity = 0.0f;
         if (distance(owner.position, ball_.position) > 3.0f) ball_.owner = -1;
         return;
     }
     ball_.position.x += ball_.velocity.x * dt;
     ball_.position.y += ball_.velocity.y * dt;
+    if (ball_.height > 0.0f || ball_.verticalVelocity > 0.0f) {
+        ball_.height = std::max(0.0f, ball_.height + ball_.verticalVelocity * dt - 4.9f * dt * dt);
+        ball_.verticalVelocity -= 9.8f * dt;
+        if (ball_.height == 0.0f) {
+            ball_.verticalVelocity = std::max(0.0f, -ball_.verticalVelocity * 0.28f);
+            if (ball_.verticalVelocity < 0.65f) ball_.verticalVelocity = 0.0f;
+        }
+    }
     const float drag = std::pow(kBallFriction, dt * 60.0f);
     ball_.velocity.x *= drag;
     ball_.velocity.y *= drag;
@@ -206,6 +239,18 @@ void MatchSimulation::updateBall(float dt) {
         ball_.owner = scoringTeam * 11 + 10;
         ball_.lastTouchTeam = scoringTeam;
     } else {
+        for (int team = 0; team < 2; ++team) {
+            const int keeperId = team * 11;
+            Player& keeper = players_[keeperId];
+            if (!keeper.sentOff && distance(keeper.position, ball_.position) <= 2.35f && ball_.height <= 3.0f) {
+                const bool highBall = ball_.height > 1.2f;
+                ball_.owner = keeperId; ball_.lastTouchTeam = team; ball_.velocity = {};
+                ball_.height = 0.0f; ball_.verticalVelocity = 0.0f;
+                keeper.animation = highBall ? PlayerAnimation::KeeperHighCatch : PlayerAnimation::KeeperCatch;
+                keeper.animationSeconds = 0.7f;
+                return;
+            }
+        }
         for (int team = 0; team < 2; ++team) {
             const int candidate = nearestPlayer(team, ball_.position);
             if (candidate >= 0 && distance(players_[candidate].position, ball_.position) < kControlRadius) {
@@ -275,6 +320,7 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             ball_.lastTouchTeam = player.team;
             ball_.position = player.position;
             ball_.velocity = {direction.x * 17.0f, direction.y * 17.0f};
+            ball_.height = 0.25f; ball_.verticalVelocity = 1.0f;
             return true;
         case PlayerAction::Shoot:
             if (ball_.owner != playerId) return false;
@@ -282,6 +328,7 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             ball_.lastTouchTeam = player.team;
             ball_.position = player.position;
             ball_.velocity = {direction.x * 25.0f, direction.y * 25.0f};
+            ball_.height = 0.35f; ball_.verticalVelocity = 4.2f;
             return true;
         case PlayerAction::Dribble:
         case PlayerAction::Sprint:
@@ -292,30 +339,25 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
                                direction.y * (action == PlayerAction::Sprint ? 9.0f : 6.5f)};
             return true;
         case PlayerAction::KeeperDive: {
-            if (player.role != 0) return false;
+            if (player.role != 0 || player.animation == PlayerAnimation::KeeperDive ||
+                player.animation == PlayerAnimation::KeeperFall || player.animation == PlayerAnimation::KeeperRecover) return false;
             const Vec2 toBall{ball_.position.x - player.position.x, ball_.position.y - player.position.y};
-            const float d = distance(player.position, ball_.position);
-            if (d > 8.0f) return false;
+            if (distance(player.position, ball_.position) > 10.0f) return false;
             const Vec2 dive = normalized(toBall);
-            const float travel = std::min(3.2f, d);
-            player.position.x += dive.x * travel;
-            player.position.y += dive.y * travel;
-            player.position.x = std::max(-35.0f, std::min(-26.0f, player.position.x));
-            player.position.y = std::max(-15.0f, std::min(15.0f, player.position.y));
+            player.velocity = {dive.x * 10.0f, dive.y * 10.0f};
             player.animation = PlayerAnimation::KeeperDive;
-            player.animationSeconds = 0.85f;
-            if (distance(player.position, ball_.position) <= 3.2f) {
-                ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
-                return true;
-            }
+            player.animationSeconds = 0.35f;
             return true;
         }
-        case PlayerAction::KeeperCatch:
-            if (player.role != 0 || distance(player.position, ball_.position) > 3.5f) return false;
+        case PlayerAction::KeeperCatch: {
+            if (player.role != 0 || distance(player.position, ball_.position) > 4.2f || ball_.height > 3.4f) return false;
+            const bool highBall = ball_.height > 1.2f;
             ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
-            player.animation = PlayerAnimation::KeeperCatch;
+            ball_.height = 0.0f; ball_.verticalVelocity = 0.0f;
+            player.animation = highBall ? PlayerAnimation::KeeperHighCatch : PlayerAnimation::KeeperCatch;
             player.animationSeconds = 0.75f;
             return true;
+        }
         case PlayerAction::Tackle: {
             const int opponent = nearestPlayer(1 - player.team, player.position);
             if (opponent < 0 || distance(player.position, players_[opponent].position) > 2.2f) return false;
