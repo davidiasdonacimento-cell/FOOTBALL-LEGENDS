@@ -305,9 +305,9 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     matchActive_=match.state()==MatchState::Running || match.state()==MatchState::Paused;
     const auto& players=match.players();
     for(std::size_t i=0;i<players.size();++i) {
-        matchPositions_[i]={players[i].position.x,players[i].position.y,players[i].team==0?0.0F:3.14159265F};
+        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F};
     }
-    matchBallPosition_=match.ball().position;
+    matchBallPosition_={match.ball().position.y,match.ball().position.x};
 }
 void Renderer::setCinematicCamera(bool enabled) { cinematicCamera_=enabled; }
 
