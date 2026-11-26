@@ -89,3 +89,9 @@ Java_com_footballlegends_mobile_NativeBridge_nativeRefereeSendOff(JNIEnv*, jclas
     if (auto* engine = fromHandle(handle)) return engine->refereeSendOff(playerId) ? JNI_TRUE : JNI_FALSE;
     return JNI_FALSE;
 }
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeIssueCard(JNIEnv*, jclass, jlong handle, jint playerId, jint cardType) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeIssueCard(playerId, cardType) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
