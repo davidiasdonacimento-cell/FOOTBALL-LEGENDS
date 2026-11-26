@@ -28,14 +28,17 @@ public:
 
     const std::vector<LobbyVertex>& environmentVertices() const noexcept;
     const std::vector<LobbyVertex>& playerVertices() const noexcept;
+    const std::vector<LobbyVertex>& ballVertices() const noexcept;
     const std::array<LobbyPlayerPosition, 11>& playerPositions() const noexcept;
 
 private:
     std::vector<LobbyVertex> environment_;
     std::vector<LobbyVertex> player_;
+    std::vector<LobbyVertex> ball_;
     std::array<LobbyPlayerPosition, 11> positions_{};
     void buildEnvironment();
     void buildPlayerModel();
+    void buildBall();
     void updateFormation();
     int formation_{0};
 };
