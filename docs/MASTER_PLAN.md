@@ -833,3 +833,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A execução de CI deve validar compilação JNI/NDK, testes nativos existentes e montagem do APK Debug.
 - A persistência precisa ser confirmada em aparelho Android, incluindo fechar e reabrir o app e iniciar uma nova partida.
 - A dificuldade ainda é global para a IA; não existe configuração independente por equipe nem escala de atributos individuais.
+
+
+# 46. DISPUTAS AÉREAS, SALTOS E CABECEIOS — 2026-11-26
+
+## Implementação na branch nativa
+- **Status:** código integrado; aguardando CI. Teste em Android físico ainda pendente.
+- Novos comandos reais de salto e cabeceio foram adicionados ao motor e ligados a botões na interface da partida.
+- O salto aplica velocidade vertical, gravidade, altura individual do atleta, cooldown e custo de resistência; goleiros não usam o salto de linha.
+- O cabeceio exige o atleta no ar, bola sem posse, distância de contato e faixa de altura válida. O contato redireciona a bola com velocidade e componente vertical, registrando o último toque.
+- Bolas aéreas agora acionam disputa automática entre atletas de linha próximos. O motor inicia saltos de contestação e resolve o contato por alcance vertical, priorizando quem está em melhor posição de salto.
+- A posse resultante registra a equipe vencedora, zera a trajetória da bola e aplica pose de cabeceio.
+- Os comandos existentes mantêm seus índices; salto e cabeceio foram adicionados ao final para não quebrar passe, chute, drible, corrida, desarme, goleiro e cruzamento.
+
+## Limites e validação
+- A disputa é um modelo físico simplificado: ainda não há colisão de corpos, empurrões, faltas específicas em disputa aérea, cabeceio direcionado por atributos, animação esquelética dedicada no renderer ou timing de impulsão aprendido pela IA.
+- A seleção de vencedor usa altura de salto e proximidade; ainda não simula força, impulsão, posicionamento de braço ou trajetória prevista.
+- Executar testes nativos e build Android Debug no CI. Validar botões, alcance, leitura da bola, animação e desempenho em dispositivo físico antes de considerar a experiência finalizada.

@@ -37,6 +37,9 @@ void MatchSimulation::initializeTeams() {
             p.protestSeconds = 0.0f;
             p.animation = PlayerAnimation::None;
             p.animationSeconds = 0.0f;
+            p.jumpHeight = 0.0f;
+            p.jumpVelocity = 0.0f;
+            p.aerialCooldown = 0.0f;
         }
     }
     ball_ = {};
@@ -174,6 +177,18 @@ void MatchSimulation::updateTeam(float dt, int team) {
     for (int i = team * 11; i < team * 11 + 11; ++i) {
         Player& p = players_[i];
         if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
+        p.aerialCooldown = std::max(0.0f, p.aerialCooldown - dt);
+        if (p.jumpHeight > 0.0f || p.jumpVelocity > 0.0f) {
+            p.jumpHeight = std::max(0.0f, p.jumpHeight + p.jumpVelocity * dt - 4.9f * dt * dt);
+            p.jumpVelocity -= 9.8f * dt;
+            if (p.jumpHeight == 0.0f) {
+                p.jumpVelocity = 0.0f;
+                if (p.animation == PlayerAnimation::Jump || p.animation == PlayerAnimation::Header) {
+                    p.animation = PlayerAnimation::None;
+                    p.animationSeconds = 0.0f;
+                }
+            }
+        }
         if (p.animationSeconds > 0.0f) {
             p.animationSeconds = std::max(0.0f, p.animationSeconds - dt);
             if (p.animationSeconds == 0.0f && !p.sentOff) {
@@ -382,6 +397,46 @@ void MatchSimulation::updateBall(float dt) {
         if (ball_.height == 0.0f) {
             ball_.verticalVelocity = std::max(0.0f, -ball_.verticalVelocity * 0.28f);
             if (ball_.verticalVelocity < 0.65f) ball_.verticalVelocity = 0.0f;
+        }
+    }
+    // Aerial contest: active outfield players can jump to challenge an airborne ball.
+    if (ball_.height > 0.45f && ball_.height < 4.2f &&
+        std::fabs(ball_.position.x) < kPitchHalfLength && std::fabs(ball_.position.y) < kPitchHalfWidth) {
+        int winner = -1;
+        float bestReach = -1.0f;
+        for (int i = 0; i < kPlayerCount; ++i) {
+            Player& candidate = players_[i];
+            if (candidate.sentOff || candidate.role == 0 ||
+                distance(candidate.position, ball_.position) > 2.45f) continue;
+            if (candidate.jumpHeight < 0.05f && candidate.aerialCooldown <= 0.0f &&
+                ball_.height > 0.85f && ball_.height < 3.4f) {
+                const float towardBall = (ball_.position.x - candidate.position.x) * (candidate.team == 0 ? 1.0f : -1.0f);
+                if (towardBall > -1.5f) {
+                    candidate.jumpVelocity = 5.2f + std::min(0.45f, candidate.stamina * 0.45f);
+                    candidate.jumpHeight = 0.01f;
+                    candidate.aerialCooldown = 0.65f;
+                    candidate.animation = PlayerAnimation::Jump;
+                    candidate.animationSeconds = 0.72f;
+                }
+            }
+            const float reach = candidate.jumpHeight + (candidate.role == 10 ? 0.22f : 0.0f);
+            if (reach + 0.85f >= ball_.height && reach > bestReach) {
+                bestReach = reach;
+                winner = i;
+            }
+        }
+        if (winner >= 0 && bestReach >= ball_.height - 0.65f) {
+            Player& challenger = players_[winner];
+            ball_.owner = winner;
+            ball_.lastTouchTeam = challenger.team;
+            ball_.position = challenger.position;
+            ball_.velocity = {};
+            ball_.height = 0.0f;
+            ball_.verticalVelocity = 0.0f;
+            challenger.animation = PlayerAnimation::Header;
+            challenger.animationSeconds = 0.48f;
+            challenger.stamina = std::max(0.0f, challenger.stamina - 0.012f);
+            return;
         }
     }
     const float drag = std::pow(kBallFriction, dt * 60.0f);
@@ -637,6 +692,32 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             ball_.height = 0.0f; ball_.verticalVelocity = 0.0f;
             player.animation = highBall ? PlayerAnimation::KeeperHighCatch : PlayerAnimation::KeeperCatch;
             player.animationSeconds = 0.75f;
+            return true;
+        }
+        case PlayerAction::Jump:
+            if (player.role == 0 || player.jumpHeight > 0.05f || player.aerialCooldown > 0.0f || player.stamina < 0.08f) return false;
+            player.jumpVelocity = 5.8f;
+            player.jumpHeight = 0.01f;
+            player.aerialCooldown = 0.42f;
+            player.animation = PlayerAnimation::Jump;
+            player.animationSeconds = 0.72f;
+            player.stamina = std::max(0.0f, player.stamina - 0.025f);
+            return true;
+        case PlayerAction::Header: {
+            if (player.role == 0 || player.jumpHeight < 0.55f || ball_.owner >= 0 ||
+                distance(player.position, ball_.position) > 2.65f || ball_.height < 0.35f ||
+                ball_.height > player.jumpHeight + 2.0f) return false;
+            Vec2 aim = direction;
+            if (aim.x == 0.0f && aim.y == 0.0f) aim = {player.team == 0 ? 1.0f : -1.0f, 0.0f};
+            ball_.owner = -1;
+            ball_.lastTouchTeam = player.team;
+            ball_.position = player.position;
+            ball_.velocity = {aim.x * 17.5f, aim.y * 17.5f};
+            ball_.height = std::max(0.75f, ball_.height);
+            ball_.verticalVelocity = 3.0f;
+            player.animation = PlayerAnimation::Header;
+            player.animationSeconds = 0.55f;
+            player.jumpVelocity = std::max(0.0f, player.jumpVelocity * 0.45f);
             return true;
         }
         case PlayerAction::Tackle: {

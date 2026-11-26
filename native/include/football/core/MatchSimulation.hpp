@@ -8,10 +8,10 @@ struct Vec2 { float x{0.0f}; float y{0.0f}; };
 enum class TacticalStyle : std::uint8_t { Balanced, Possession, CounterAttack, HighPress, DefensiveBlock };
 enum class AIDifficulty : std::uint8_t { Easy, Normal, Hard };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
-enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch, Cross };
+enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch, Cross, Jump, Header };
 enum class ControlRole : std::uint8_t { Player, Referee };
 enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal, ThrowIn, Corner, GoalKick, Advantage };
-enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch, KeeperFall, KeeperRecover, KeeperHighCatch };
+enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch, KeeperFall, KeeperRecover, KeeperHighCatch, Jump, Header };
 
 struct Player {
     int id{0};
@@ -25,6 +25,9 @@ struct Player {
     float protestSeconds{0.0f};
     PlayerAnimation animation{PlayerAnimation::None};
     float animationSeconds{0.0f};
+    float jumpHeight{0.0f};
+    float jumpVelocity{0.0f};
+    float aerialCooldown{0.0f};
 };
 
 struct Ball {

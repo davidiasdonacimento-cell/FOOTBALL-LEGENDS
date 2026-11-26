@@ -135,6 +135,17 @@ public final class MatchUi extends FrameLayout {
             actions.addView(b, new LinearLayout.LayoutParams(0, dp(46), 1));
         }
         actionPanel.addView(actions);
+        LinearLayout aerialActions = new LinearLayout(context);
+        aerialActions.setGravity(Gravity.CENTER);
+        Button jump = button("SALTAR / DISPUTAR");
+        jump.setTextSize(9);
+        jump.setOnClickListener(v -> surface.playerAction(8, -1, 1.0f, 0.0f));
+        Button header = button("CABECEAR");
+        header.setTextSize(9);
+        header.setOnClickListener(v -> surface.playerAction(9, -1, 1.0f, 0.0f));
+        aerialActions.addView(jump, new LinearLayout.LayoutParams(0, dp(46), 1));
+        aerialActions.addView(header, new LinearLayout.LayoutParams(0, dp(46), 1));
+        actionPanel.addView(aerialActions);
 
         Button dive = button("GOLEIRO • MERGULHO / DEFESA");
         dive.setOnClickListener(v -> surface.playerAction(5, -1, 1.0f, 0.0f));
