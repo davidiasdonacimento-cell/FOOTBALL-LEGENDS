@@ -731,7 +731,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 41. FASE 5 — REINÍCIOS, VANTAGEM, PÊNALTIS E VAR — 2026-11-26
 
 ## Escopo implementado nesta revisão
-- **Status:** implementação em validação. O primeiro CI apontou expectativas antigas de chute para fora; o segundo revelou que o cenário de escanteio estava dentro da baliza. Teste corrigido para cruzar a linha fora da boca do gol; revisão da vantagem também foi reforçada.
+- **Status:** implementação em validação. Os testes já avançaram pelos reinícios; a terceira execução encontrou um snapshot do placar capturado depois do gol no fluxo de VAR. O snapshot agora é guardado antes de incrementar o placar.
 - Bola que cruza a linha lateral gera lateral para a equipe adversária ao último toque.
 - Bola que cruza a linha de fundo fora da baliza gera escanteio quando o último toque é da defesa; caso contrário, tiro de meta para a defesa.
 - Reinícios posicionam a bola nas zonas correspondentes e escolhem cobrador ativo; tiro de meta prioriza o goleiro, usando atleta ativo alternativo se ele foi expulso.

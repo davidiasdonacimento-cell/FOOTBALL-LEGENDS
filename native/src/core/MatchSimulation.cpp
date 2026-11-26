@@ -58,6 +58,7 @@ void MatchSimulation::reset() {
     eventBeforeVar_ = MatchEvent::None;
     ballBeforeVar_ = {};
     ballBeforeGoal_ = {};
+    scoresBeforeGoal_[0] = scoresBeforeGoal_[1] = 0;
     scoresBeforeVar_[0] = scoresBeforeVar_[1] = 0;
     eventPlayer_ = -1;
     advantageActive_ = false;
@@ -284,6 +285,8 @@ void MatchSimulation::updateBall(float dt) {
                                 ball_.height <= kGoalHeight - kBallRadius;
         if (insideGoal) {
             ballBeforeGoal_ = ball_;
+            scoresBeforeGoal_[0] = scores_[0];
+            scoresBeforeGoal_[1] = scores_[1];
             ++scores_[scoringTeam];
             event_ = MatchEvent::Goal;
             eventPlayer_ = -1;
@@ -617,8 +620,13 @@ bool MatchSimulation::requestVarReview() {
     if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ == MatchEvent::None || event_ == MatchEvent::VarReview) return false;
     eventBeforeVar_ = event_;
     ballBeforeVar_ = event_ == MatchEvent::Goal ? ballBeforeGoal_ : ball_;
-    scoresBeforeVar_[0] = scores_[0];
-    scoresBeforeVar_[1] = scores_[1];
+    if (event_ == MatchEvent::Goal) {
+        scoresBeforeVar_[0] = scoresBeforeGoal_[0];
+        scoresBeforeVar_[1] = scoresBeforeGoal_[1];
+    } else {
+        scoresBeforeVar_[0] = scores_[0];
+        scoresBeforeVar_[1] = scores_[1];
+    }
     event_ = MatchEvent::VarReview;
     return true;
 }

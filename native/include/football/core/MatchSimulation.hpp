@@ -111,6 +111,7 @@ private:
     MatchEvent eventBeforeVar_{MatchEvent::None};
     Ball ballBeforeVar_{};
     Ball ballBeforeGoal_{};
+    int scoresBeforeGoal_[2]{0, 0};
     int scoresBeforeVar_[2]{0, 0};
     int eventPlayer_{-1};
     bool advantageActive_{false};
