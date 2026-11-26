@@ -19,5 +19,6 @@ public final class NativeBridge {
     public static native boolean nativeMovePlayer(long engineHandle, float x, float y);
     public static native boolean nativePlayerAction(long engineHandle, int action, int targetPlayerId, float x, float y);
     public static native boolean nativeRefereeSendOff(long engineHandle, int playerId);
+    public static native boolean nativeRefereeIssueCard(long engineHandle, int playerId, int cardType);
     public static native void nativeDestroy(long engineHandle);
 }
