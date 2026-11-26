@@ -41,6 +41,7 @@ int main() {
     assert(passMatch.command(10, football::PlayerAction::Pass, -1, 1.0f, 0.0f));
     assert(passMatch.ball().owner == -1);
     assert(passMatch.ball().velocity.x > 0.0f);
+    assert(passMatch.players()[10].animation == football::PlayerAnimation::Pass);
 
     football::MatchSimulation crossMatch;
     crossMatch.start();
@@ -56,6 +57,16 @@ int main() {
     assert(keeperMatch.setPlayerMovement(1.0f, 0.0f));
     for (int i = 0; i < 40; ++i) keeperMatch.update(0.05f);
     assert(keeperMatch.players()[0].position.x <= -26.0f);
+
+    football::MatchSimulation moving;
+    moving.start(); assert(moving.setPlayerMovement(1.0f,0.0f)); moving.update(0.05f);
+    assert(moving.players()[10].velocity.x>0.0f);
+    football::MatchSimulation refereePaused;
+    refereePaused.start(); refereePaused.setControlRole(football::ControlRole::Referee); refereePaused.pause();
+    assert(refereePaused.callFoul(14));
+    assert(refereePaused.event()==football::MatchEvent::Foul);
+    assert(refereePaused.restartPlay());
+    assert(refereePaused.state()==football::MatchState::Running);
 
     football::MatchSimulation onsideMatch;
     onsideMatch.start();

@@ -127,6 +127,13 @@ Mat4 modelAt(float x,float y,float z,float yaw) {
     r.v[0]=c; r.v[2]=-s; r.v[8]=s; r.v[10]=c;
     r.v[12]=x; r.v[13]=y; r.v[14]=z; return r;
 }
+Mat4 modelAtScale(float x,float y,float z,float yaw,float sx,float sy,float sz) {
+    Mat4 r=modelAt(x,y,z,yaw);
+    r.v[0]*=sx;r.v[1]*=sx;r.v[2]*=sx;
+    r.v[4]*=sy;r.v[5]*=sy;r.v[6]*=sy;
+    r.v[8]*=sz;r.v[9]*=sz;r.v[10]*=sz;
+    return r;
+}
 void configureVertexLayout() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,position)));
@@ -227,8 +234,12 @@ void Renderer::uploadScene() {
     const auto& ball=scene_.ballVertices();
     glGenVertexArrays(1,&ballVao_); glGenBuffers(1,&ballBuffer_);
     glBindVertexArray(ballVao_); glBindBuffer(GL_ARRAY_BUFFER,ballBuffer_);
-    glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(ball.size()*sizeof(LobbyVertex)),
-                 ball.data(),GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(ball.size()*sizeof(LobbyVertex)),ball.data(),GL_STATIC_DRAW);
+    configureVertexLayout();
+    const auto& names=scene_.playerNameVertices();
+    glGenVertexArrays(1,&playerNameVao_); glGenBuffers(1,&playerNameBuffer_);
+    glBindVertexArray(playerNameVao_); glBindBuffer(GL_ARRAY_BUFFER,playerNameBuffer_);
+    glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(names.size()*sizeof(LobbyVertex)),names.data(),GL_STATIC_DRAW);
     configureVertexLayout(); glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER,0);
 }
@@ -282,7 +293,9 @@ void Renderer::render() {
         const float px=matchActive_?matchPositions_[i].x:lobbyPositions[i].x;
         const float pz=matchActive_?matchPositions_[i].z:lobbyPositions[i].z;
         const float yaw=matchActive_?matchPositions_[i].yaw:lobbyPositions[i].yaw;
-        const float phase=seconds*1.65F+static_cast<float>(i)*.61F;
+        const float speed=matchActive_?matchPositions_[i].speed:0.0F;
+        const float movementBlend=std::max(0.0F,std::min(1.0F,speed/5.8F));
+        const float phase=seconds*(2.2F+movementBlend*6.4F)+static_cast<float>(i)*.61F;
         const float pose=matchActive_?matchPositions_[i].pose:0.0F;
         const float poseTime=matchActive_?matchPositions_[i].poseTime:0.0F;
         const float poseBlend=std::min(1.0F,poseTime*3.5F);
@@ -296,14 +309,16 @@ void Renderer::render() {
         const float jumpLift=jumping?std::sin(jumpProgress*3.14159265F)*.58F:0.0F;
         const float bob=(pose==3.0F||falling)?-.24F*poseBlend:
             (recovering?-.12F*(1.0F-poseBlend):jumpLift+std::sin(phase*2.0F)*.012F);
-        const Mat4 model=modelAt(px,bob,pz,yaw);
+        const float heightScale=.92F+static_cast<float>((i*7)%6)*.028F;
+        const float widthScale=.93F+static_cast<float>((i*3)%5)*.035F;
+        const Mat4 model=modelAtScale(px,bob,pz,yaw,widthScale,heightScale,widthScale);
         const Mat4 mvp=multiply(vp,model);
         const float protestBlend=(pose==1.0F||pose==2.0F)?std::min(1.0F,poseTime*2.8F):0.0F;
         const bool diving=pose==3.0F;
         const bool catching=pose==4.0F;
-        float armSwing=std::sin(phase)*.075F+1.05F*protestBlend;
+        float armSwing=std::sin(phase)*(.025F+movementBlend*.78F)+1.05F*protestBlend;
         float oppositeArm=-armSwing;
-        float legSwing=std::sin(phase)*.045F;
+        float legSwing=std::sin(phase+3.14159265F)*(.02F+movementBlend*.92F);
         float bodyLean=0.0F;
         if(catching||highCatching) {
             armSwing=(highCatching?1.42F:1.15F)*poseBlend;
@@ -325,6 +340,14 @@ void Renderer::render() {
             armSwing=-.85F*poseBlend;
             oppositeArm=.85F*poseBlend;
             bodyLean=.28F*poseBlend;
+        } else if(pose==12.0F) {
+            armSwing=-.62F*poseBlend; oppositeArm=.28F*poseBlend; bodyLean=-.12F*poseBlend;
+        } else if(pose==13.0F) {
+            armSwing=.32F*poseBlend; oppositeArm=-.32F*poseBlend; legSwing=.92F*poseBlend; bodyLean=-.28F*poseBlend;
+        } else if(pose==14.0F) {
+            armSwing=-.42F*poseBlend; oppositeArm=.42F*poseBlend; legSwing=.35F*poseBlend;
+        } else if(pose==15.0F) {
+            armSwing=-.92F*poseBlend; oppositeArm=.72F*poseBlend; legSwing=.62F*poseBlend; bodyLean=.38F*poseBlend;
         }
         if(falling) {
             legSwing=.45F;
@@ -348,9 +371,18 @@ void Renderer::render() {
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,model.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
         glDrawArrays(GL_TRIANGLES,0,playerCount);
+        const std::size_t nameCount=scene_.playerNameCount(static_cast<int>(i));
+        if(nameCount>0&&playerNameVao_!=0){
+            glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
+            glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
+            glUniformMatrix4fv(modelLocation_,1,GL_FALSE,model.v.data());
+            glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
+            glBindVertexArray(playerNameVao_);
+            glDrawArrays(GL_TRIANGLES,static_cast<GLint>(scene_.playerNameStart(static_cast<int>(i))),static_cast<GLsizei>(nameCount));
+        }
     }
     if(matchActive_) {
-        const Mat4 refereeModel=modelAt(refereePosition_.x,0.0F,refereePosition_.y,0.0F);
+        const Mat4 refereeModel=modelAtScale(refereePosition_.x,0.0F,refereePosition_.y,0.0F,.94F,1.04F,.94F);
         const Mat4 refereeMvp=multiply(vp,refereeModel);
         const Mat4 refereeBones[5]={identity(),rotationAroundX({-.20F,1.31F,0},.45F),rotationAroundX({.20F,1.31F,0},-.45F),identity(),identity()};
         // High-visibility referee kit, distinct from both teams.
@@ -389,7 +421,8 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     matchActive_=match.state()==MatchState::Running || match.state()==MatchState::Paused;
     const auto& players=match.players();
     for(std::size_t i=0;i<players.size();++i) {
-        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds,static_cast<float>(players[i].animation),players[i].animationSeconds};
+        const float speed=std::sqrt(players[i].velocity.x*players[i].velocity.x+players[i].velocity.y*players[i].velocity.y);
+        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds,static_cast<float>(players[i].animation),players[i].animationSeconds,speed};
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
     matchBallHeight_=match.ball().height;
@@ -419,6 +452,8 @@ void Renderer::destroy() {
     if(offsideLineBuffer_) { glDeleteBuffers(1,&offsideLineBuffer_); offsideLineBuffer_=0; }
     if(offsideLineVao_) { glDeleteVertexArrays(1,&offsideLineVao_); offsideLineVao_=0; }
     if(ballVao_) { glDeleteVertexArrays(1,&ballVao_); ballVao_=0; }
+    if(playerNameBuffer_) { glDeleteBuffers(1,&playerNameBuffer_); playerNameBuffer_=0; }
+    if(playerNameVao_) { glDeleteVertexArrays(1,&playerNameVao_); playerNameVao_=0; }
     matchActive_=false;
     if(program_) { glDeleteProgram(program_); program_=0; }
     if(materialTexture_) { glDeleteTextures(1,&materialTexture_); materialTexture_=0; }

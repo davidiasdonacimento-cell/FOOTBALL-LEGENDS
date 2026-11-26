@@ -36,6 +36,8 @@ private:
     GLuint playerBuffer_{0};
     GLuint ballVao_{0};
     GLuint ballBuffer_{0};
+    GLuint playerNameVao_{0};
+    GLuint playerNameBuffer_{0};
     GLuint offsideLineVao_{0};
     GLuint offsideLineBuffer_{0};
     GLint mvpLocation_{-1};

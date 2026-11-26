@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <string>
 
 namespace football {
 namespace {
@@ -132,9 +133,11 @@ void arc(std::vector<LobbyVertex>& out,float cx,float cz,float radius,float widt
 } // namespace
 
 void LobbyScene::build() {
-    environment_.clear(); player_.clear(); ball_.clear();
+    environment_.clear(); player_.clear(); ball_.clear(); playerNames_.clear();
+    nameStarts_.fill(0); nameCounts_.fill(0);
     buildEnvironment();
     buildPlayerModel();
+    buildPlayerNames();
     buildBall();
     updateFormation();
 }
@@ -145,6 +148,9 @@ void LobbyScene::setFormation(int formation) {
 const std::vector<LobbyVertex>& LobbyScene::environmentVertices() const noexcept { return environment_; }
 const std::vector<LobbyVertex>& LobbyScene::playerVertices() const noexcept { return player_; }
 const std::vector<LobbyVertex>& LobbyScene::ballVertices() const noexcept { return ball_; }
+const std::vector<LobbyVertex>& LobbyScene::playerNameVertices() const noexcept { return playerNames_; }
+std::size_t LobbyScene::playerNameStart(int id) const noexcept { return id>=0&&id<22?nameStarts_[static_cast<std::size_t>(id)]:0; }
+std::size_t LobbyScene::playerNameCount(int id) const noexcept { return id>=0&&id<22?nameCounts_[static_cast<std::size_t>(id)]:0; }
 const std::array<LobbyPlayerPosition,11>& LobbyScene::playerPositions() const noexcept { return positions_; }
 
 void LobbyScene::updateFormation() {
@@ -368,6 +374,56 @@ void LobbyScene::buildPlayerModel() {
     cylinder(player_,{.13F,.45F,-.005F},{.135F,.12F,-.015F},.066F,.052F,socks,14);
     ellipsoid(player_,{.135F,.075F,-.075F},{.085F,.065F,.16F},boots,14,8);
     assignBone(player_,rightLegBegin,player_.size(),4.0F);
+}
+
+
+void LobbyScene::buildPlayerNames() {
+    static const std::array<const char*,22> names{{
+        "ALISSON","MARQUINHOS","MILITAO","VANDIJK","HAKIMI","RODRI",
+        "DEBRUYNE","BELLINGHAM","VINICIUS","MBAPPE","HAALAND",
+        "COURTOIS","CARVAJAL","RUBENDIAS","SALIBA","THEO","VALVERDE",
+        "PEDRI","MUSIALA","SALAH","KANE","MESSI"
+    }};
+    auto glyph=[](char ch)->std::array<unsigned char,5>{
+        switch(ch){
+            case 'A':return {{2,5,7,5,5}};case 'B':return {{6,5,6,5,6}};
+            case 'C':return {{3,4,4,4,3}};case 'D':return {{6,5,5,5,6}};
+            case 'E':return {{7,4,6,4,7}};case 'F':return {{7,4,6,4,4}};
+            case 'G':return {{3,4,5,5,3}};case 'H':return {{5,5,7,5,5}};
+            case 'I':return {{7,2,2,2,7}};case 'J':return {{1,1,1,5,2}};
+            case 'K':return {{5,5,6,5,5}};case 'L':return {{4,4,4,4,7}};
+            case 'M':return {{5,7,7,5,5}};case 'N':return {{5,7,7,7,5}};
+            case 'O':return {{2,5,5,5,2}};case 'P':return {{6,5,6,4,4}};
+            case 'Q':return {{2,5,5,3,1}};case 'R':return {{6,5,6,5,5}};
+            case 'S':return {{3,4,2,1,6}};case 'T':return {{7,2,2,2,2}};
+            case 'U':return {{5,5,5,5,7}};case 'V':return {{5,5,5,5,2}};
+            case 'W':return {{5,5,7,7,5}};case 'X':return {{5,5,2,5,5}};
+            case 'Y':return {{5,5,2,2,2}};case 'Z':return {{7,1,2,4,7}};
+            default:return {{0,0,0,0,0}};
+        }
+    };
+    constexpr float cell=.0082F,gap=.0020F;
+    const Color white{.98F,.99F,1.0F,1.0F};
+    for(int id=0;id<22;++id){
+        const auto index=static_cast<std::size_t>(id);
+        nameStarts_[index]=playerNames_.size();
+        const std::string name(names[index]);
+        const float width=static_cast<float>(name.size())*(3.0F*cell+gap)-gap;
+        const float left=-width*.5F;
+        const float z=id<11?-.145F:.145F;
+        const Vec3 normal=id<11?Vec3{0,0,-1}:Vec3{0,0,1};
+        for(std::size_t n=0;n<name.size();++n){
+            const auto rows=glyph(name[n]);
+            for(int row=0;row<5;++row)for(int col=0;col<3;++col){
+                if((rows[static_cast<std::size_t>(row)]&(1U<<(2-col)))==0U)continue;
+                const float x0=left+static_cast<float>(n)*(3.0F*cell+gap)+static_cast<float>(col)*cell;
+                const float y1=1.205F-static_cast<float>(row)*cell;
+                quad(playerNames_,{x0,y1-cell*.88F,z},{x0+cell*.88F,y1-cell*.88F,z},
+                     {x0+cell*.88F,y1,z},{x0,y1,z},normal,white);
+            }
+        }
+        nameCounts_[index]=playerNames_.size()-nameStarts_[index];
+    }
 }
 
 } // namespace football

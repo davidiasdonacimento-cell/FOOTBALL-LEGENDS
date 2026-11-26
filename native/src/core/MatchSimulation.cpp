@@ -704,6 +704,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             ball_.position = player.position;
             ball_.velocity = {direction.x * 17.0f, direction.y * 17.0f};
             ball_.height = 0.25f; ball_.verticalVelocity = 1.0f;
+            player.animation=PlayerAnimation::Pass; player.animationSeconds=0.34f;
             return true;
         case PlayerAction::Cross:
             if (ball_.owner != playerId || targetPlayerId < 0 || targetPlayerId >= kPlayerCount ||
@@ -714,6 +715,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             ball_.velocity = {direction.x * 16.0f, direction.y * 16.0f};
             ball_.height = 0.55f;
             ball_.verticalVelocity = 6.8f;
+            player.animation=PlayerAnimation::Shoot; player.animationSeconds=0.48f;
             return true;
         case PlayerAction::Shoot:
             if (ball_.owner != playerId) return false;
@@ -722,6 +724,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             ball_.position = player.position;
             ball_.velocity = {direction.x * 25.0f, direction.y * 25.0f};
             ball_.height = 0.35f; ball_.verticalVelocity = 4.2f;
+            player.animation=PlayerAnimation::Shoot; player.animationSeconds=0.48f;
             return true;
         case PlayerAction::Dribble:
         case PlayerAction::Sprint:
@@ -730,6 +733,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             playerSpeedMultiplier_ = action == PlayerAction::Sprint ? 1.45f : 1.05f;
             player.velocity = {direction.x * (action == PlayerAction::Sprint ? 9.0f : 6.5f),
                                direction.y * (action == PlayerAction::Sprint ? 9.0f : 6.5f)};
+            if(action==PlayerAction::Dribble){player.animation=PlayerAnimation::Dribble;player.animationSeconds=.28f;}
             return true;
         case PlayerAction::KeeperDive: {
             if (player.role != 0 || player.animation == PlayerAnimation::KeeperDive ||
@@ -792,6 +796,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
                 if (speed > 7.5f) { registerFoul(playerId); return false; }
                 ball_.owner = playerId;
                 ball_.lastTouchTeam = player.team;
+                player.animation=PlayerAnimation::Tackle; player.animationSeconds=.38f;
                 return true;
             }
             return false;
@@ -845,7 +850,7 @@ void MatchSimulation::updateReferee(float dt) {
     target.y = std::max(-53.0f, std::min(53.0f, target.y));
     const Vec2 direction = normalized({target.x - refereePosition_.x, target.y - refereePosition_.y});
     const float distanceToTarget = distance(target, refereePosition_);
-    const float step = std::min(distanceToTarget, 7.2f * dt);
+    const float step = std::min(distanceToTarget, 13.5f * dt);
     refereePosition_.x += direction.x * step;
     refereePosition_.y += direction.y * step;
 }
@@ -891,12 +896,12 @@ void MatchSimulation::registerFoul(int playerId) {
 }
 bool MatchSimulation::callFoul(int playerId) {
     if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
-    if (state_ != MatchState::Running) return false;
+    if (state_ != MatchState::Running && !(state_ == MatchState::Paused && event_ == MatchEvent::None)) return false;
     registerFoul(playerId);
     return true;
 }
 bool MatchSimulation::playAdvantage(int playerId) {
-    if (controlRole_ != ControlRole::Referee || state_ != MatchState::Running || advantageActive_ || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
+    if (controlRole_ != ControlRole::Referee || (state_ != MatchState::Running && !(state_ == MatchState::Paused && event_ == MatchEvent::None)) || advantageActive_ || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
     advantageActive_ = true;
     advantageTeam_ = 1 - players_[playerId].team;
     advantagePlayer_ = playerId;
