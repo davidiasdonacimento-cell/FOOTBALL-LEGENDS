@@ -29,6 +29,17 @@ int main() {
     for (int i = 0; i < 40; ++i) keeperMatch.update(0.05f);
     assert(keeperMatch.players()[0].position.x <= -26.0f);
 
+    football::MatchSimulation onsideMatch;
+    onsideMatch.start();
+    football::MatchSimulationTestAccess::setPlayer(onsideMatch, 9, {18.0f, 0.0f});
+    for (int id = 11; id < 22; ++id)
+        football::MatchSimulationTestAccess::setPlayer(onsideMatch, id, {id == 11 ? 35.0f : 20.0f, static_cast<float>(id - 16)});
+    football::MatchSimulationTestAccess::setPlayer(onsideMatch, 10, {8.0f, 0.0f});
+    football::MatchSimulationTestAccess::setBall(onsideMatch, {8.0f, 0.0f}, 10);
+    assert(onsideMatch.command(10, football::PlayerAction::Pass, 9, 1.0f, 0.0f));
+    assert(onsideMatch.event() == football::MatchEvent::None);
+    assert(!onsideMatch.offsideLineVisible());
+
     football::MatchSimulation keeperDive;
     keeperDive.start();
     football::MatchSimulationTestAccess::setBall(keeperDive, {-29.0f, 0.0f}, -1);
@@ -36,6 +47,8 @@ int main() {
     assert(keeperDive.command(0, football::PlayerAction::KeeperDive));
     assert(keeperDive.ball().owner == 0);
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperDive);
+    keeperDive.update(0.05f);
+    assert(keeperDive.players()[0].animationSeconds < 0.85f);
 
     football::MatchSimulation keeperCatch;
     keeperCatch.start();
@@ -64,6 +77,16 @@ int main() {
     assert(automaticOffside.event() == football::MatchEvent::None);
     assert(!automaticOffside.offsideLineVisible());
     assert(std::fabs(automaticOffside.ball().position.x - stoppedBall.x) < 0.001f);
+
+    football::MatchSimulation penaltyMatch;
+    penaltyMatch.start();
+    penaltyMatch.setControlRole(football::ControlRole::Referee);
+    football::MatchSimulationTestAccess::setBall(penaltyMatch, {30.0f, 0.0f}, -1);
+    assert(penaltyMatch.callFoul(12));
+    assert(penaltyMatch.event() == football::MatchEvent::Penalty);
+    assert(penaltyMatch.restartPlay());
+    assert(penaltyMatch.ball().owner == 10);
+    assert(std::fabs(penaltyMatch.ball().position.x - 29.5f) < 0.001f);
 
     football::MatchSimulation match;
     assert(match.playerCount() == 22);
@@ -103,6 +126,7 @@ int main() {
     assert(match.controlRole() == football::ControlRole::Referee);
     assert(match.issueCard(12, 1));
     assert(match.players()[12].yellowCards == 1);
+    assert(match.players()[12].animation == football::PlayerAnimation::Protest);
     assert(match.issueCard(12, 1));
     assert(match.players()[12].sentOff);
     assert(match.issueCard(13, 2));
