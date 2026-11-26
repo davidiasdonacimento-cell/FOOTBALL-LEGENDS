@@ -111,7 +111,7 @@ int main() {
     assert(!match.command(10, football::PlayerAction::Shoot, -1, 1.0f, 0.0f));
     match.setControlRole(football::ControlRole::Referee);
     match.pause();
-    assert(match.callFoul(12));
+    assert(match.callFoul(14));
     assert(match.event() == football::MatchEvent::Foul);
     assert(match.restartTeam() == 0);
     assert(match.requestVarReview());
