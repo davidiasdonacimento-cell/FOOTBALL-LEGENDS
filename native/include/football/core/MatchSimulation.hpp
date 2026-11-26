@@ -6,7 +6,7 @@ namespace football {
 
 struct Vec2 { float x{0.0f}; float y{0.0f}; };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
-enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle };
+enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
 enum class ControlRole : std::uint8_t { Player, Referee };
 enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal };
 
