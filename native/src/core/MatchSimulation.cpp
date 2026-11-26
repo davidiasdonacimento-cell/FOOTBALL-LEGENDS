@@ -1,6 +1,7 @@
 #include "football/core/MatchSimulation.hpp"
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 namespace football {
 namespace {
@@ -14,7 +15,10 @@ constexpr Vec2 kFormation[11] = {
 };
 }
 
-MatchSimulation::MatchSimulation() { initializeTeams(); }
+MatchSimulation::MatchSimulation() {
+    initializeTeams();
+    refereePosition_ = {0.0f, -5.0f};
+}
 
 void MatchSimulation::initializeTeams() {
     for (int team = 0; team < 2; ++team) {
