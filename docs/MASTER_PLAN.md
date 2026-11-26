@@ -587,3 +587,27 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 
 ## Evidência
 - A validação será registrada após a execução do workflow Android no commit desta seção. A existência dos testes não significa que já passaram.
+
+
+# 34. CONTROLE DIRETO E MODO ÁRBITRO — 2026-11-26
+
+## Entrega implementada na branch nativa
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando CI e teste em aparelho.
+- O lobby oferece duas entradas reais para a partida: Jogar como atleta e Ser o árbitro.
+- HUD Android nativo sobre a cena 3D, com pausa e troca de função durante a partida.
+- Modo jogador: seleção entre os 11 atletas da equipe azul, controle direcional por toque e ações de passe, chute, drible, corrida e desarme.
+- O jogador selecionado é controlado pelo usuário; os demais 21 são atualizados pela IA.
+- Passe sem alvo explícito procura um companheiro à frente na direção escolhida.
+- Modo árbitro: seleção de qualquer um dos 22 jogadores, apito que pausa/retoma a partida, cartões amarelos e vermelhos.
+- Dois amarelos expulsam; vermelho expulsa imediatamente. A decisão de cartão só é aceita quando a função ativa é Árbitro.
+- Renderer recebe o estado atualizado do motor e desenha 22 modelos de jogadores nas posições simuladas e uma bola 3D móvel.
+- Eixos do campo foram alinhados aos gols reais da cena: comprimento no eixo longitudinal e largura no eixo transversal.
+- JNI e wrappers Java conectam os comandos de partida, movimento, ações, troca de função e cartões.
+- Testes nativos ampliados para seleção/movimentação de atleta, restrição de ações ao modo correto e regras de cartões.
+
+## Limitações que permanecem
+- O sistema ainda não possui animações específicas de corrida, chute, carrinho, reclamação, cartão vermelho ou expulsão; os modelos usam a animação procedural já existente.
+- A arbitragem manual permite apitar e aplicar cartões, mas a detecção automática de faltas, impedimento, VAR, linha virtual e decisões de pênalti ainda não está implementada.
+- O apito pausa a partida; não há ainda uma sequência visual de infração nem reinício de bola parada.
+- A IA é funcional como movimentação básica, mas ainda precisa de goleiros, tática avançada, colisões, recepção e regras completas.
+- HUD/renderer e comandos precisam ser validados em aparelho Android real. Compilação CI ainda pendente.
