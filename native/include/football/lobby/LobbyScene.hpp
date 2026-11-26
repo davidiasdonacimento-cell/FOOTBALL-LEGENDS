@@ -19,6 +19,7 @@ struct LobbyPlayerPosition {
     float x;
     float z;
     float yaw;
+    float protest{0.0f};
 };
 
 class LobbyScene final {
