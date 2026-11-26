@@ -4,7 +4,6 @@
 
 namespace football {
 namespace {
-constexpr float kPi = 3.14159265358979323846f;
 constexpr float kPlayerSpeed = 6.2f;
 constexpr float kBallFriction = 0.985f;
 constexpr float kControlRadius = 1.65f;
