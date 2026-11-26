@@ -49,6 +49,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Run native match simulation tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Inative/include \
+            native/src/core/MatchSimulation.cpp \
+            native/tests/MatchSimulationTests.cpp \
+            -o /tmp/match-simulation-tests
+          /tmp/match-simulation-tests
+
       - name: Assemble debug APK
         run: gradle assembleDebug
 
