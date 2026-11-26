@@ -116,6 +116,19 @@ void ring(std::vector<LobbyVertex>& out,float cx,float cz,float radius,float wid
                  {0,1,0},color);
     }
 }
+void arc(std::vector<LobbyVertex>& out,float cx,float cz,float radius,float width,
+         float startAngle,float endAngle,float y,Color color,int segments=32) {
+    const float inner=radius-width*.5F, outer=radius+width*.5F;
+    for(int i=0;i<segments;++i) {
+        const float a0=startAngle+(endAngle-startAngle)*static_cast<float>(i)/segments;
+        const float a1=startAngle+(endAngle-startAngle)*static_cast<float>(i+1)/segments;
+        quad(out,{cx+std::cos(a0)*inner,y,cz+std::sin(a0)*inner},
+                 {cx+std::cos(a0)*outer,y,cz+std::sin(a0)*outer},
+                 {cx+std::cos(a1)*outer,y,cz+std::sin(a1)*outer},
+                 {cx+std::cos(a1)*inner,y,cz+std::sin(a1)*inner},
+                 {0,1,0},color);
+    }
+}
 } // namespace
 
 void LobbyScene::build() {
@@ -176,14 +189,24 @@ void LobbyScene::buildEnvironment() {
         lineZ(environment_,-9.16F,goalZ-sign*5.5F,goalZ,.16F,y,white);
         lineZ(environment_,9.16F,goalZ-sign*5.5F,goalZ,.16F,y,white);
         ring(environment_,0,goalZ-sign*11.0F, .22F,.42F,y,white,20);
+        // Penalty arc faces the field, outside the penalty area.
+        arc(environment_,0,goalZ-sign*11.0F,9.15F,.16F,
+            sign>0.0F?kPi:0.0F,sign>0.0F?2.0F*kPi:kPi,y,white,36);
         // Goal frames and restrained net supports.
         const float gz=goalZ+sign*.8F;
         cylinder(environment_,{-3.66F,.0F,gz},{-3.66F,2.44F,gz},.12F,.12F,white,12);
         cylinder(environment_,{3.66F,.0F,gz},{3.66F,2.44F,gz},.12F,.12F,white,12);
         cylinder(environment_,{-3.66F,2.44F,gz},{3.66F,2.44F,gz},.12F,.12F,white,12);
+        const float netBackZ=gz+sign*2.0F;
         for(int n=0;n<=8;++n) {
             const float nx=-3.66F+7.32F*static_cast<float>(n)/8.0F;
-            cylinder(environment_,{nx,.05F,gz},{nx,2.4F,gz+sign*2.0F},.018F,.018F,{.72F,.82F,.83F,1},6);
+            cylinder(environment_,{nx,.05F,gz},{nx,2.4F,netBackZ},.018F,.018F,{.72F,.82F,.83F,1},6);
+            cylinder(environment_,{nx,.05F,netBackZ},{nx,2.4F,netBackZ},.018F,.018F,{.72F,.82F,.83F,1},6);
+        }
+        for(int row=1;row<=5;++row) {
+            const float ny=2.4F*static_cast<float>(row)/6.0F;
+            cylinder(environment_,{-3.66F,ny,netBackZ},{3.66F,ny,netBackZ},.018F,.018F,{.72F,.82F,.83F,1},8);
+            cylinder(environment_,{-3.66F,ny,gz},{3.66F,ny,netBackZ},.018F,.018F,{.72F,.82F,.83F,1},8);
         }
     }
     // Stadium bowl, continuous seating tiers and structural fascia.
