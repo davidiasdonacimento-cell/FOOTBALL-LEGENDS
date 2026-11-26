@@ -390,14 +390,16 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
     matchBallHeight_=match.ball().height;
+    // Broadcast-style match camera: the ball is the primary tracking target.
+    // A small lead from the controlled player keeps nearby context visible without
+    // allowing the camera to drift away from the active play.
     const int focusId=match.controlRole()==ControlRole::Player?match.controlledPlayer():-1;
+    matchCameraX_=match.ball().position.y;
+    matchCameraZ_=match.ball().position.x;
     if(focusId>=0 && focusId<MatchSimulation::kPlayerCount) {
         const auto& focus=players[static_cast<std::size_t>(focusId)];
-        matchCameraX_=focus.position.y*0.58F+match.ball().position.y*0.42F;
-        matchCameraZ_=focus.position.x*0.58F+match.ball().position.x*0.42F;
-    } else {
-        matchCameraX_=match.ball().position.y;
-        matchCameraZ_=match.ball().position.x;
+        matchCameraX_=matchCameraX_*0.82F+focus.position.y*0.18F;
+        matchCameraZ_=matchCameraZ_*0.82F+focus.position.x*0.18F;
     }
     refereePosition_={match.refereePosition().y,match.refereePosition().x};
     offsideLine_=match.offsideLine();

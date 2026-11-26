@@ -867,3 +867,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A separação corporal e o cálculo de falta são aproximações 2D, não um solver físico 3D completo nem interpretação integral das regras de disputa aérea.
 - A precisão do cabeceio usa uma variação determinística pequena para manter os testes reprodutíveis; ainda não há sistema de atributos carregado de elenco, animação por esqueleto completo, IK de pescoço ou contato de cabeça modelado em 3D.
 - A execução de CI deve aprovar testes nativos e APK Debug. O comportamento visual, resposta dos botões e desempenho ainda precisam ser verificados em Android físico.
+
+
+# 48. REESTRUTURAÇÃO DOS CONTROLES E CÂMERA DE PARTIDA — 2026-11-26
+
+## Correções desta revisão
+- **Status:** IMPLEMENTAÇÃO PREPARADA; aguardando CI e teste físico.
+- HUD de partida substituído por layout de jogo: analógico virtual contínuo no canto inferior esquerdo e conjunto compacto de ações no canto inferior direito.
+- Passe, chute, drible e desarme são comandos por toque; corrida mantém comando de velocidade enquanto pressionada e libera o movimento ao soltar.
+- Salto, cabeceio, ações de goleiro, troca de atleta e dificuldade saíram do painel permanente e passaram para um menu contextual.
+- Modo árbitro separado em painel compacto; cartões e apito ficam visíveis, enquanto decisões secundárias abrem uma lista específica.
+- Câmera de partida prioriza a posição da bola, com pequena ponderação do atleta controlado, em vez de seguir principalmente o jogador.
+- A branch Unity `main` não é alterada.
+
+## Validação e limitações
+- CI deve validar compilação Java/Android, JNI e testes nativos existentes.
+- A sensação do analógico, a escala dos botões, a leitura da bola, a visibilidade do árbitro e a resposta da câmera precisam ser testadas no telefone.
+- A IA existente possui posicionamento tático e decisões autônomas de passe/chute/condução/cruzamento, mas não está comprovado que o comportamento visual de uma partida completa esteja equilibrado; isso requer testes dedicados de partida e ajuste após observação.
