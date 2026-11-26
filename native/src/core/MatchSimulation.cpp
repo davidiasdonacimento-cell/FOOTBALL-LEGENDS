@@ -45,6 +45,7 @@ void MatchSimulation::reset() {
     controlRole_ = ControlRole::Player;
     controlledPlayer_ = 10;
     playerInput_ = {};
+    playerSpeedMultiplier_ = 1.0f;
     initializeTeams();
 }
 void MatchSimulation::start() {
@@ -72,6 +73,7 @@ bool MatchSimulation::selectControlledPlayer(int playerId) {
 bool MatchSimulation::setPlayerMovement(float x, float y) {
     if (state_ != MatchState::Running || controlRole_ != ControlRole::Player || !std::isfinite(x) || !std::isfinite(y)) return false;
     playerInput_ = normalized({std::max(-1.0f, std::min(1.0f, x)), std::max(-1.0f, std::min(1.0f, y))});
+    if (playerInput_.x == 0.0f && playerInput_.y == 0.0f) playerSpeedMultiplier_ = 1.0f;
     return true;
 }
 
@@ -117,7 +119,7 @@ void MatchSimulation::updateTeam(float dt, int team) {
         if (p.sentOff) { p.velocity = {}; continue; }
         Vec2 target = p.position;
         if (team == 0 && i == controlledPlayer_ && controlRole_ == ControlRole::Player) {
-            p.velocity = {playerInput_.x * kPlayerSpeed, playerInput_.y * kPlayerSpeed};
+            p.velocity = {playerInput_.x * kPlayerSpeed * playerSpeedMultiplier_, playerInput_.y * kPlayerSpeed * playerSpeedMultiplier_};
             p.position.x += p.velocity.x * dt;
             p.position.y += p.velocity.y * dt;
             clampPlayer(p);
@@ -224,6 +226,7 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
         case PlayerAction::Sprint:
             if (action == PlayerAction::Sprint && player.stamina <= 0.0f) return false;
             playerInput_ = direction;
+            playerSpeedMultiplier_ = action == PlayerAction::Sprint ? 1.45f : 1.05f;
             player.velocity = {direction.x * (action == PlayerAction::Sprint ? 9.0f : 6.5f),
                                direction.y * (action == PlayerAction::Sprint ? 9.0f : 6.5f)};
             return true;
