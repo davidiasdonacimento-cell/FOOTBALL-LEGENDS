@@ -28,6 +28,7 @@ void MatchSimulation::initializeTeams() {
             p.velocity = {};
             p.stamina = 1.0f;
             p.sentOff = false;
+            p.yellowCards = 0;
         }
     }
     ball_ = {};
@@ -237,6 +238,16 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             return false;
         }
     }
+    return false;
+}
+bool MatchSimulation::issueCard(int playerId, int cardType) {
+    if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
+    if (cardType == 1) {
+        ++players_[playerId].yellowCards;
+        if (players_[playerId].yellowCards >= 2) return setPlayerSentOff(playerId, true);
+        return true;
+    }
+    if (cardType == 2) return setPlayerSentOff(playerId, true);
     return false;
 }
 bool MatchSimulation::setPlayerSentOff(int playerId, bool sentOff) {
