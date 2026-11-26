@@ -22,6 +22,11 @@ public:
     void pauseMatch();
     void resumeMatch();
     void resetMatch();
+    void setControlRole(int role);
+    bool selectPlayer(int playerId);
+    bool movePlayer(float x, float y);
+    bool playerAction(int action, int targetPlayerId, float x, float y);
+    bool refereeSendOff(int playerId);
     const MatchSimulation& match() const { return match_; }
 
 private:
