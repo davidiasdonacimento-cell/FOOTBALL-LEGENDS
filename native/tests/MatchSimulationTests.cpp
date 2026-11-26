@@ -16,6 +16,9 @@ struct MatchSimulationTestAccess {
         match.ball_.height = height;
         match.ball_.verticalVelocity = verticalVelocity;
     }
+    static void setBallMotion(MatchSimulation& match, Vec2 velocity) {
+        match.ball_.velocity = velocity;
+    }
 };
 }
 
@@ -85,6 +88,43 @@ int main() {
     assert(highBallKeeper.ball().owner == 0);
     assert(highBallKeeper.ball().height == 0.0f);
     assert(highBallKeeper.players()[0].animation == football::PlayerAnimation::KeeperHighCatch);
+
+    football::MatchSimulation validGoal;
+    validGoal.start();
+    football::MatchSimulationTestAccess::setBall(validGoal, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(validGoal, {20.0f, 0.0f});
+    validGoal.update(0.05f);
+    assert(validGoal.score(0) == 1);
+    assert(validGoal.event() == football::MatchEvent::Goal);
+    assert(validGoal.state() == football::MatchState::Paused);
+    assert(validGoal.restartPlay());
+    assert(validGoal.state() == football::MatchState::Running);
+    assert(validGoal.ball().owner >= 11 && validGoal.ball().owner < 22);
+
+    football::MatchSimulation wideShot;
+    wideShot.start();
+    football::MatchSimulationTestAccess::setBall(wideShot, {35.5f, 7.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(wideShot, {20.0f, 0.0f});
+    wideShot.update(0.05f);
+    assert(wideShot.score(0) == 0);
+    assert(wideShot.ball().velocity.x < 0.0f);
+
+    football::MatchSimulation highShot;
+    highShot.start();
+    football::MatchSimulationTestAccess::setBall(highShot, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(highShot, 2.5f);
+    football::MatchSimulationTestAccess::setBallMotion(highShot, {20.0f, 0.0f});
+    highShot.update(0.05f);
+    assert(highShot.score(0) == 0);
+    assert(highShot.ball().velocity.x < 0.0f);
+
+    football::MatchSimulation postShot;
+    postShot.start();
+    football::MatchSimulationTestAccess::setBall(postShot, {35.9f, 3.66f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(postShot, {4.0f, 0.0f});
+    postShot.update(0.05f);
+    assert(postShot.score(0) == 0);
+    assert(postShot.ball().velocity.x < 0.0f);
 
     football::MatchSimulation airborneBall;
     airborneBall.start();

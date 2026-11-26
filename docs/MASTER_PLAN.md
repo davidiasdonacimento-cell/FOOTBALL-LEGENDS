@@ -692,3 +692,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A textura do gramado é procedural no shader; não é uma textura fotográfica de alta resolução.
 - O teste automatizado valida a geometria gerada, mas não substitui a avaliação visual, de FPS, memória e temperatura no aparelho Android.
 - Não marcar a FASE 3 como concluída até verificar a cena em aparelho real e corrigir eventuais problemas de enquadramento ou desempenho.
+
+
+# 39. FASE 4 — FÍSICA DE GOL E COLISÕES COM A BALIZA — 2026-11-26
+
+## Implementação
+- **Status:** código atualizado; aguardando uma única execução de CI para esta revisão.
+- Gol agora só é contabilizado quando a bola cruza a linha dentro da largura útil da baliza e abaixo do travessão.
+- Bola que passa ao lado ou acima da baliza não aumenta o placar.
+- Colisões simplificadas foram adicionadas para os dois postes e o travessão, com reflexão de velocidade.
+- Após um gol, o motor registra o evento, pausa a partida, posiciona a bola no centro e atribui a saída à equipe adversária.
+- O reinício de jogo existente passa a permitir a saída após gol sem apagar o placar.
+- Testes de regressão cobrem gol válido, chute para fora, chute acima do travessão, colisão com poste e reinício após gol.
+
+## Limites e próximos passos
+- Colisões de baliza são aproximações 2D com altura separada; ainda não são um solver físico 3D contínuo.
+- Ainda faltam rede deformável, contato corporal, desvio por jogadores e arbitragem completa para bola fora.
+- A aprovação de CI não comprova sensação de chute ou qualidade visual; validar no aparelho continua obrigatório.

@@ -231,14 +231,66 @@ void MatchSimulation::updateBall(float dt) {
         ball_.position.y = std::copysign(kPitchHalfWidth, ball_.position.y);
         ball_.velocity.y *= -0.55f;
     }
+
+    // Goal frame collision: two posts and a crossbar on each end line.
+    constexpr float kGoalHalfWidth = 3.66f;
+    constexpr float kGoalHeight = 2.44f;
+    constexpr float kBallRadius = 0.11f;
+    constexpr float kPostCollisionRadius = 0.28f;
+    for (float goalX : {-kPitchHalfLength, kPitchHalfLength}) {
+        for (float postY : {-kGoalHalfWidth, kGoalHalfWidth}) {
+            const float dx = ball_.position.x - goalX;
+            const float dy = ball_.position.y - postY;
+            const float distanceSquared = dx * dx + dy * dy;
+            if (distanceSquared < kPostCollisionRadius * kPostCollisionRadius &&
+                ball_.height < kGoalHeight) {
+                float nx = dx;
+                float ny = dy;
+                const float length = std::sqrt(nx * nx + ny * ny);
+                if (length > 0.0001f) { nx /= length; ny /= length; }
+                else { nx = goalX > 0.0f ? 1.0f : -1.0f; ny = 0.0f; }
+                const float normalSpeed = ball_.velocity.x * nx + ball_.velocity.y * ny;
+                ball_.velocity.x -= 1.55f * normalSpeed * nx;
+                ball_.velocity.y -= 1.55f * normalSpeed * ny;
+                ball_.position.x = goalX + nx * (kPostCollisionRadius + 0.02f);
+                ball_.position.y = postY + ny * (kPostCollisionRadius + 0.02f);
+            }
+        }
+        if (std::fabs(ball_.position.x - goalX) < 0.30f &&
+            std::fabs(ball_.position.y) < kGoalHalfWidth &&
+            ball_.height >= kGoalHeight - 0.24f &&
+            ball_.height <= kGoalHeight + 0.24f) {
+            ball_.height = kGoalHeight - 0.30f;
+            ball_.verticalVelocity = -std::max(1.2f, std::fabs(ball_.verticalVelocity) * 0.55f);
+            ball_.velocity.x *= -0.35f;
+        }
+    }
+
     if (std::fabs(ball_.position.x) > kPitchHalfLength) {
+        const float goalLine = std::copysign(kPitchHalfLength, ball_.position.x);
         const int scoringTeam = ball_.position.x > 0.0f ? 0 : 1;
-        ++scores_[scoringTeam];
-        ball_.position = {};
-        ball_.velocity = {};
-        ball_.owner = scoringTeam * 11 + 10;
-        ball_.lastTouchTeam = scoringTeam;
-    } else {
+        const bool insideGoal = std::fabs(ball_.position.y) <= kGoalHalfWidth - kBallRadius &&
+                                ball_.height <= kGoalHeight - kBallRadius;
+        if (insideGoal) {
+            ++scores_[scoringTeam];
+            event_ = MatchEvent::Goal;
+            eventPlayer_ = -1;
+            restartTeam_ = 1 - scoringTeam;
+            restartPosition_ = {};
+            ball_.position = {};
+            ball_.velocity = {};
+            ball_.height = 0.0f;
+            ball_.verticalVelocity = 0.0f;
+            ball_.owner = -1;
+            ball_.lastTouchTeam = scoringTeam;
+            state_ = MatchState::Paused;
+            return;
+        }
+        // A shot outside the frame cannot count as a goal.
+        ball_.position.x = goalLine - std::copysign(0.20f, ball_.position.x);
+        ball_.velocity.x = -std::copysign(std::fabs(ball_.velocity.x) * 0.45f, ball_.position.x);
+    }
+    if (std::fabs(ball_.position.x) <= kPitchHalfLength) {
         for (int team = 0; team < 2; ++team) {
             const int keeperId = team * 11;
             Player& keeper = players_[keeperId];
