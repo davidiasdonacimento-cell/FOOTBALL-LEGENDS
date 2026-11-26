@@ -285,6 +285,27 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             player.velocity = {direction.x * (action == PlayerAction::Sprint ? 9.0f : 6.5f),
                                direction.y * (action == PlayerAction::Sprint ? 9.0f : 6.5f)};
             return true;
+        case PlayerAction::KeeperDive: {
+            if (player.role != 0) return false;
+            const Vec2 toBall{ball_.position.x - player.position.x, ball_.position.y - player.position.y};
+            const float d = distance(player.position, ball_.position);
+            if (d > 8.0f) return false;
+            const Vec2 dive = normalized(toBall);
+            const float travel = std::min(3.2f, d);
+            player.position.x += dive.x * travel;
+            player.position.y += dive.y * travel;
+            player.position.x = std::max(-35.0f, std::min(-26.0f, player.position.x));
+            player.position.y = std::max(-15.0f, std::min(15.0f, player.position.y));
+            if (distance(player.position, ball_.position) <= 3.2f) {
+                ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
+                return true;
+            }
+            return true;
+        }
+        case PlayerAction::KeeperCatch:
+            if (player.role != 0 || distance(player.position, ball_.position) > 3.5f) return false;
+            ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
+            return true;
         case PlayerAction::Tackle: {
             const int opponent = nearestPlayer(1 - player.team, player.position);
             if (opponent < 0 || distance(player.position, players_[opponent].position) > 2.2f) return false;
