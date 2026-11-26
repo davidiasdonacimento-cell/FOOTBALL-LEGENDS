@@ -27,6 +27,7 @@ public:
     bool movePlayer(float x, float y);
     bool playerAction(int action, int targetPlayerId, float x, float y);
     bool refereeSendOff(int playerId);
+    bool refereeIssueCard(int playerId, int cardType);
     const MatchSimulation& match() const { return match_; }
 
 private:
