@@ -24,6 +24,7 @@ private:
     GLuint compileShader(GLenum type, const char* source);
     void destroy();
     void uploadScene();
+    void createMaterialTexture();
 
     LobbyScene scene_;
     GLuint program_{0};
