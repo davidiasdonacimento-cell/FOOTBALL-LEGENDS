@@ -24,5 +24,11 @@ public final class NativeBridge {
     public static native boolean nativePlayerAction(long engineHandle, int action, int targetPlayerId, float x, float y);
     public static native boolean nativeRefereeSendOff(long engineHandle, int playerId);
     public static native boolean nativeRefereeIssueCard(long engineHandle, int playerId, int cardType);
+    public static native boolean nativeRefereeCallFoul(long engineHandle, int playerId);
+    public static native boolean nativeRefereeCallOffside(long engineHandle, int playerId);
+    public static native boolean nativeRefereeRequestVar(long engineHandle);
+    public static native boolean nativeRefereeResolveVar(long engineHandle, boolean uphold);
+    public static native boolean nativeRefereeRestartPlay(long engineHandle);
+    public static native void nativeSetMatchTimeScale(long engineHandle, float scale);
     public static native void nativeDestroy(long engineHandle);
 }
