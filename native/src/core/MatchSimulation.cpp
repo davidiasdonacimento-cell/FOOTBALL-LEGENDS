@@ -34,6 +34,8 @@ void MatchSimulation::initializeTeams() {
             p.sentOff = false;
             p.yellowCards = 0;
             p.protestSeconds = 0.0f;
+            p.animation = PlayerAnimation::None;
+            p.animationSeconds = 0.0f;
         }
     }
     ball_ = {};
@@ -134,6 +136,10 @@ void MatchSimulation::updateTeam(float dt, int team) {
     const int chaser = nearestPlayer(team, ball_.position);
     for (int i = team * 11; i < team * 11 + 11; ++i) {
         Player& p = players_[i];
+        if (p.animationSeconds > 0.0f) {
+            p.animationSeconds = std::max(0.0f, p.animationSeconds - dt);
+            if (p.animationSeconds == 0.0f && !p.sentOff) p.animation = PlayerAnimation::None;
+        }
         if (p.sentOff) {
             p.velocity = {};
             if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
@@ -296,6 +302,8 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
             player.position.y += dive.y * travel;
             player.position.x = std::max(-35.0f, std::min(-26.0f, player.position.x));
             player.position.y = std::max(-15.0f, std::min(15.0f, player.position.y));
+            player.animation = PlayerAnimation::KeeperDive;
+            player.animationSeconds = 0.85f;
             if (distance(player.position, ball_.position) <= 3.2f) {
                 ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
                 return true;
@@ -305,6 +313,8 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
         case PlayerAction::KeeperCatch:
             if (player.role != 0 || distance(player.position, ball_.position) > 3.5f) return false;
             ball_.owner = playerId; ball_.lastTouchTeam = player.team; ball_.velocity = {};
+            player.animation = PlayerAnimation::KeeperCatch;
+            player.animationSeconds = 0.75f;
             return true;
         case PlayerAction::Tackle: {
             const int opponent = nearestPlayer(1 - player.team, player.position);
@@ -334,7 +344,15 @@ bool MatchSimulation::issueCard(int playerId, int cardType) {
 bool MatchSimulation::setPlayerSentOff(int playerId, bool sentOff) {
     if (playerId < 0 || playerId >= kPlayerCount) return false;
     players_[playerId].sentOff = sentOff;
-    if (sentOff) players_[playerId].protestSeconds = 1.8f;
+    if (sentOff) {
+        players_[playerId].protestSeconds = 1.8f;
+        players_[playerId].animation = PlayerAnimation::Dismissal;
+        players_[playerId].animationSeconds = 1.8f;
+    } else {
+        players_[playerId].animation = PlayerAnimation::None;
+        players_[playerId].animationSeconds = 0.0f;
+        players_[playerId].protestSeconds = 0.0f;
+    }
     if (sentOff && ball_.owner == playerId) ball_.owner = -1;
     return true;
 }
@@ -363,16 +381,15 @@ void MatchSimulation::updateReferee(float dt) {
 bool MatchSimulation::detectOffside(int attackingTeam, int receiverId) {
     if (receiverId < 0 || receiverId >= kPlayerCount) return false;
     const float sign = attackingTeam == 0 ? 1.0f : -1.0f;
-    float defenders[10]{};
+    float defenders[11]{};
     int count = 0;
     for (int i = (1 - attackingTeam) * 11; i < (1 - attackingTeam) * 11 + 11; ++i) {
-        if (players_[i].sentOff || players_[i].role == 0) continue;
+        if (players_[i].sentOff) continue;
         defenders[count++] = players_[i].position.x * sign;
     }
     if (count < 2) return false;
     std::sort(defenders, defenders + count, std::greater<float>());
     offsideLine_ = defenders[1] * sign;
-    offsideLineVisible_ = true;
     const Player& receiver = players_[receiverId];
     const float receiverProgress = receiver.position.x * sign;
     const float ballProgress = ball_.position.x * sign;
