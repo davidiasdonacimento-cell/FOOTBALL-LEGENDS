@@ -66,18 +66,30 @@ public final class MatchUi extends FrameLayout {
     }
 
     private void buildPlayerControls() {
-        TextView selected = label("ATLETA CONTROLADO: CAMISA 10", 11, Color.WHITE, true);
-        actionPanel.addView(selected);
+        actionPanel.addView(label("ESCOLHA O JOGADOR QUE VOCÊ VAI CONTROLAR", 11, Color.WHITE, true));
+        Spinner squad = new Spinner(context);
+        String[] squadOptions = new String[11];
+        for (int i = 0; i < squadOptions.length; i++) squadOptions[i] = "AZUL • CAMISA " + (i + 1);
+        squad.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, squadOptions));
+        squad.setSelection(10);
+        squad.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                selectedPlayer = position;
+                surface.selectPlayer(position);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
+        actionPanel.addView(squad, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(42)));
         LinearLayout row = new LinearLayout(context);
         row.setGravity(Gravity.CENTER);
         Button left = button("◀");
         Button down = button("▼");
         Button up = button("▲");
         Button right = button("▶");
-        addDirection(left, -1, 0);
-        addDirection(down, 0, 1);
-        addDirection(up, 0, -1);
-        addDirection(right, 1, 0);
+        addDirection(left, 0, -1);
+        addDirection(down, -1, 0);
+        addDirection(up, 1, 0);
+        addDirection(right, 0, 1);
         for (Button b : new Button[]{left, down, up, right})
             row.addView(b, new LinearLayout.LayoutParams(0, dp(52), 1));
         actionPanel.addView(row);
