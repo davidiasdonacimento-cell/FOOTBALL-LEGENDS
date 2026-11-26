@@ -36,6 +36,8 @@ private:
     GLuint playerBuffer_{0};
     GLuint ballVao_{0};
     GLuint ballBuffer_{0};
+    GLuint offsideLineVao_{0};
+    GLuint offsideLineBuffer_{0};
     GLint mvpLocation_{-1};
     GLint modelLocation_{-1};
     GLint cameraLocation_{-1};
@@ -51,6 +53,9 @@ private:
     bool matchActive_{false};
     std::array<LobbyPlayerPosition, MatchSimulation::kPlayerCount> matchPositions_{};
     Vec2 matchBallPosition_{};
+    Vec2 refereePosition_{};
+    float offsideLine_{0.0f};
+    bool offsideLineVisible_{false};
 };
 
 } // namespace football
