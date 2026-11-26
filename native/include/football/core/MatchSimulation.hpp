@@ -17,6 +17,7 @@ struct Player {
     Vec2 velocity{};
     float stamina{1.0f};
     bool sentOff{false};
+    int yellowCards{0};
 };
 
 struct Ball {
@@ -44,6 +45,7 @@ public:
     bool command(int playerId, PlayerAction action, int targetPlayerId = -1,
                  float directionX = 0.0f, float directionY = 0.0f);
     bool setPlayerSentOff(int playerId, bool sentOff);
+    bool issueCard(int playerId, int cardType);
     void setSpectatorMode(bool enabled);
     void setControlRole(ControlRole role);
     ControlRole controlRole() const { return controlRole_; }
