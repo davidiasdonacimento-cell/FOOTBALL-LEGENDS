@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 
 #include "football/core/MatchSimulation.hpp"
 #include "football/render/Renderer.hpp"
@@ -33,6 +34,8 @@ public:
 private:
     Renderer renderer_;
     MatchSimulation match_;
+    std::chrono::steady_clock::time_point previousFrame_{};
+    bool hasPreviousFrame_{false};
 };
 
 } // namespace football
