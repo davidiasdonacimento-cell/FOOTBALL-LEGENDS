@@ -36,6 +36,7 @@ public:
     bool refereeResolveVar(bool uphold);
     bool refereeRestartPlay();
     void setMatchTimeScale(float scale);
+    bool setAIDifficulty(int difficulty);
     const MatchSimulation& match() const { return match_; }
 
 private:

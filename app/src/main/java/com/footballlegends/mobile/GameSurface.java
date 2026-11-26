@@ -48,5 +48,6 @@ public final class GameSurface extends GLSurfaceView {
     public void refereeResolveVar(boolean uphold) { queueEvent(() -> gameRenderer.refereeResolveVar(uphold)); }
     public void refereeRestartPlay() { queueEvent(() -> gameRenderer.refereeRestartPlay()); }
     public void setMatchTimeScale(float scale) { queueEvent(() -> gameRenderer.setMatchTimeScale(scale)); }
+    public void setAIDifficulty(int difficulty) { queueEvent(() -> gameRenderer.setAIDifficulty(difficulty)); }
     public void release() { queueEvent(gameRenderer::releaseNativeEngine); }
 }

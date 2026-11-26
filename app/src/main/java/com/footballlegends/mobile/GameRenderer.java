@@ -12,6 +12,7 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
     private long engineHandle;
     private int formation;
     private boolean cinematicCamera = true;
+    private int aiDifficulty = 1;
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -25,6 +26,7 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
         NativeBridge.nativeSurfaceCreated(engineHandle);
         NativeBridge.nativeSetLobbyFormation(engineHandle, formation);
         NativeBridge.nativeSetCinematicCamera(engineHandle, cinematicCamera);
+        NativeBridge.nativeSetAIDifficulty(engineHandle, aiDifficulty);
     }
 
     @Override
@@ -70,6 +72,11 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
     boolean refereeResolveVar(boolean uphold) { return engineHandle != 0L && NativeBridge.nativeRefereeResolveVar(engineHandle, uphold); }
     boolean refereeRestartPlay() { return engineHandle != 0L && NativeBridge.nativeRefereeRestartPlay(engineHandle); }
     void setMatchTimeScale(float scale) { if (engineHandle != 0L) NativeBridge.nativeSetMatchTimeScale(engineHandle, scale); }
+    boolean setAIDifficulty(int value) {
+        if (value < 0 || value > 2) return false;
+        aiDifficulty = value;
+        return engineHandle == 0L || NativeBridge.nativeSetAIDifficulty(engineHandle, value);
+    }
     void releaseNativeEngine() {
         if (engineHandle != 0L) {
             NativeBridge.nativeDestroy(engineHandle);

@@ -42,5 +42,9 @@ bool GameEngine::refereeRequestVar() { return match_.requestVarReview(); }
 bool GameEngine::refereeResolveVar(bool uphold) { return match_.resolveVar(uphold); }
 bool GameEngine::refereeRestartPlay() { return match_.restartPlay(); }
 void GameEngine::setMatchTimeScale(float scale) { match_.setTimeScale(scale); }
+bool GameEngine::setAIDifficulty(int difficulty) {
+    if (difficulty < 0 || difficulty > 2) return false;
+    return match_.setAIDifficulty(static_cast<AIDifficulty>(difficulty));
+}
 
 } // namespace football

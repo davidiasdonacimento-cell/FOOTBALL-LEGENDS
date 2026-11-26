@@ -130,3 +130,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_footballlegends_mobile_NativeBridge_nativeSetMatchTimeScale(JNIEnv*, jclass, jlong handle, jfloat scale) {
     if (auto* engine = fromHandle(handle)) engine->setMatchTimeScale(scale);
 }
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeSetAIDifficulty(JNIEnv*, jclass, jlong handle, jint difficulty) {
+    if (auto* engine = fromHandle(handle)) return engine->setAIDifficulty(difficulty) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}

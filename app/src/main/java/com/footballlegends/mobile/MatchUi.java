@@ -72,6 +72,26 @@ public final class MatchUi extends FrameLayout {
     }
 
     private void buildPlayerControls() {
+        actionPanel.addView(label("DIFICULDADE DA INTELIGÊNCIA ARTIFICIAL", 11, Color.WHITE, true));
+        Spinner difficulty = new Spinner(context);
+        String[] difficultyOptions = {"FÁCIL", "NORMAL", "DIFÍCIL"};
+        difficulty.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, difficultyOptions));
+        int savedDifficulty = context.getSharedPreferences("football_legends_settings", Context.MODE_PRIVATE)
+                .getInt("ai_difficulty", 1);
+        savedDifficulty = Math.max(0, Math.min(2, savedDifficulty));
+        difficulty.setSelection(savedDifficulty);
+        surface.setAIDifficulty(savedDifficulty);
+        difficulty.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                if (surface != null) {
+                    surface.setAIDifficulty(position);
+                    context.getSharedPreferences("football_legends_settings", Context.MODE_PRIVATE)
+                            .edit().putInt("ai_difficulty", position).apply();
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
+        actionPanel.addView(difficulty, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(40)));
         actionPanel.addView(label("ESCOLHA O JOGADOR QUE VOCÊ VAI CONTROLAR", 11, Color.WHITE, true));
         Spinner squad = new Spinner(context);
         keeperActions = new LinearLayout(context);

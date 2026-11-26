@@ -816,3 +816,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Cruzamentos são bolas aéreas simplificadas; ainda faltam cabeceios, disputa aérea, voleios, primeiro toque e animação específica de cruzamento.
 - Os níveis de dificuldade estão expostos no núcleo C++, mas ainda precisam de seletor no menu Android e de ajuste por atributos individuais.
 - Testes de CI não substituem avaliação visual, equilíbrio e desempenho em Android físico.
+
+
+# 45. CONFIGURAÇÃO DE DIFICULDADE NA INTERFACE ANDROID — 2026-11-26
+
+## Integração implementada
+- **Status:** código integrado na branch; aguardando CI. A validação em aparelho Android continua pendente.
+- A tela de partida passa a oferecer Fácil, Normal e Difícil em um seletor funcional.
+- A escolha é persistida nas preferências locais do Android e reaplicada ao criar o motor nativo.
+- O caminho completo foi ligado: MatchUi → GameSurface → GameRenderer → NativeBridge/JNI → GameEngine → MatchSimulation.
+- O motor valida os valores aceitos e mantém a configuração na instância da partida.
+- A escolha inicial é Normal quando ainda não existe preferência salva.
+- A interface não altera a lógica de dificuldade por conta própria: o valor selecionado chega ao núcleo C++ que já modifica velocidade, frequência de decisão e critérios de finalização.
+
+## Validação e limites
+- A execução de CI deve validar compilação JNI/NDK, testes nativos existentes e montagem do APK Debug.
+- A persistência precisa ser confirmada em aparelho Android, incluindo fechar e reabrir o app e iniciar uma nova partida.
+- A dificuldade ainda é global para a IA; não existe configuração independente por equipe nem escala de atributos individuais.

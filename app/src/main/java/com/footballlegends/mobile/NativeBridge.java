@@ -31,5 +31,6 @@ public final class NativeBridge {
     public static native boolean nativeRefereeResolveVar(long engineHandle, boolean uphold);
     public static native boolean nativeRefereeRestartPlay(long engineHandle);
     public static native void nativeSetMatchTimeScale(long engineHandle, float scale);
+    public static native boolean nativeSetAIDifficulty(long engineHandle, int difficulty);
     public static native void nativeDestroy(long engineHandle);
 }
