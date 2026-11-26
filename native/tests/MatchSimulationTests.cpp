@@ -9,6 +9,13 @@ int main() {
     assert(passMatch.ball().owner == -1);
     assert(passMatch.ball().velocity.x > 0.0f);
 
+    football::MatchSimulation keeperMatch;
+    keeperMatch.start();
+    assert(keeperMatch.selectControlledPlayer(0));
+    assert(keeperMatch.setPlayerMovement(1.0f, 0.0f));
+    for (int i = 0; i < 40; ++i) keeperMatch.update(0.05f);
+    assert(keeperMatch.players()[0].position.x <= -26.0f);
+
     football::MatchSimulation match;
     assert(match.playerCount() == 22);
     assert(match.activePlayerCount(0) == 11 && match.activePlayerCount(1) == 11);
@@ -52,6 +59,25 @@ int main() {
     assert(match.issueCard(13, 2));
     assert(match.players()[13].sentOff);
     assert(!match.command(10, football::PlayerAction::Shoot, -1, 1.0f, 0.0f));
+    match.setControlRole(football::ControlRole::Referee);
+    match.pause();
+    assert(match.callFoul(12));
+    assert(match.event() == football::MatchEvent::Foul);
+    assert(match.restartTeam() == 0);
+    assert(match.requestVarReview());
+    assert(match.event() == football::MatchEvent::VarReview);
+    assert(match.resolveVar(true));
+    assert(match.event() == football::MatchEvent::Foul);
+    assert(match.restartPlay());
+    assert(match.state() == football::MatchState::Running);
+    assert(match.callOffside(9));
+    assert(match.event() == football::MatchEvent::Offside);
+    assert(match.offsideLineVisible());
+    assert(match.restartPlay());
+    const float timeBeforeSlow = match.matchSeconds();
+    match.setTimeScale(0.25f);
+    match.update(0.05f);
+    assert(std::fabs((match.matchSeconds() - timeBeforeSlow) - 0.0125f) < 0.0001f);
     match.finish();
     const float finishedAt = match.matchSeconds();
     match.update(0.2f);
