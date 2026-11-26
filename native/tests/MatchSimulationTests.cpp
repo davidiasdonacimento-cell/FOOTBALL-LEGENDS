@@ -53,11 +53,19 @@ int main() {
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperDive);
     keeperDive.update(0.05f);
     assert(keeperDive.players()[0].animationSeconds < 0.35f);
-    for (int i = 0; i < 7; ++i) keeperDive.update(0.05f);
-    assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperFall ||
-           keeperDive.players()[0].animation == football::PlayerAnimation::KeeperRecover);
     for (int i = 0; i < 20; ++i) keeperDive.update(0.05f);
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::None);
+
+    football::MatchSimulation keeperMissedDive;
+    keeperMissedDive.start();
+    football::MatchSimulationTestAccess::setBall(keeperMissedDive, {-29.0f, 8.0f}, -1);
+    assert(keeperMissedDive.selectControlledPlayer(0));
+    assert(keeperMissedDive.command(0, football::PlayerAction::KeeperDive));
+    for (int i = 0; i < 8; ++i) keeperMissedDive.update(0.05f);
+    assert(keeperMissedDive.players()[0].animation == football::PlayerAnimation::KeeperFall ||
+           keeperMissedDive.players()[0].animation == football::PlayerAnimation::KeeperRecover);
+    for (int i = 0; i < 20; ++i) keeperMissedDive.update(0.05f);
+    assert(keeperMissedDive.players()[0].animation == football::PlayerAnimation::None);
 
     football::MatchSimulation keeperCatch;
     keeperCatch.start();
