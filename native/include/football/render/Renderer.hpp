@@ -53,6 +53,7 @@ private:
     bool matchActive_{false};
     std::array<LobbyPlayerPosition, MatchSimulation::kPlayerCount> matchPositions_{};
     Vec2 matchBallPosition_{};
+    float matchBallHeight_{0.0f};
     Vec2 refereePosition_{};
     float offsideLine_{0.0f};
     bool offsideLineVisible_{false};
