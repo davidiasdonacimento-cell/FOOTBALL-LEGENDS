@@ -277,16 +277,20 @@ void Renderer::render() {
         const float pose=matchActive_?matchPositions_[i].pose:0.0F;
         const float poseTime=matchActive_?matchPositions_[i].poseTime:0.0F;
         const float poseBlend=std::min(1.0F,poseTime*3.5F);
-        const float bob=pose==3.0F?-.22F*poseBlend:std::sin(phase*2.0F)*.012F;
+        const bool falling=pose==5.0F;
+        const bool recovering=pose==6.0F;
+        const bool highCatching=pose==7.0F;
+        const float bob=(pose==3.0F||falling)?-.24F*poseBlend:(recovering?-.12F*(1.0F-poseBlend):std::sin(phase*2.0F)*.012F);
         const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
         const float protestBlend=(pose==1.0F||pose==2.0F)?std::min(1.0F,poseTime*2.8F):0.0F;
         const bool diving=pose==3.0F;
         const bool catching=pose==4.0F;
-        const float armSwing=catching?1.15F*poseBlend:(diving?1.25F*poseBlend:std::sin(phase)*.075F+1.05F*protestBlend);
-        const float oppositeArm=catching?1.15F*poseBlend:(diving?-1.25F*poseBlend:-armSwing);
-        const float legSwing=diving?.45F:std::sin(phase)*.045F;
-        const Mat4 rootPose=diving?rotationAroundX({0,.82F,0},1.20F*poseBlend):identity();
+        const float armSwing=(catching||highCatching)?(highCatching?1.42F:1.15F)*poseBlend:(diving?1.25F*poseBlend:std::sin(phase)*.075F+1.05F*protestBlend);
+        const float oppositeArm=(catching||highCatching)?armSwing:(diving?-1.25F*poseBlend:-armSwing);
+        const float legSwing=(diving||falling)?.45F:std::sin(phase)*.045F;
+        const float bodyLean=diving?1.20F*poseBlend:(falling?1.48F*poseBlend:(recovering?0.65F*(1.0F-poseBlend):0.0F));
+        const Mat4 rootPose=bodyLean>0.0F?rotationAroundX({0,.82F,0},bodyLean):identity();
         const Mat4 bones[5]={
             rootPose,
             rotationAroundX({-.20F,1.31F,0},armSwing),
@@ -325,7 +329,7 @@ void Renderer::render() {
         glDrawArrays(GL_LINES,0,2);
     }
     if(matchActive_ && ballVao_!=0) {
-        const Mat4 ballModel=modelAt(matchBallPosition_.x,.24F,matchBallPosition_.y,0.0F);
+        const Mat4 ballModel=modelAt(matchBallPosition_.x,.24F+matchBallHeight_,matchBallPosition_.y,0.0F);
         const Mat4 ballMvp=multiply(vp,ballModel);
         glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
         glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
@@ -345,6 +349,7 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
         matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds,static_cast<float>(players[i].animation),players[i].animationSeconds};
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
+    matchBallHeight_=match.ball().height;
     refereePosition_={match.refereePosition().y,match.refereePosition().x};
     offsideLine_=match.offsideLine();
     offsideLineVisible_=match.offsideLineVisible();
