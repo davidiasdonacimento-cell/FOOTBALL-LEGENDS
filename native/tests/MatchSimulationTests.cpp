@@ -47,8 +47,8 @@ int main() {
 
     football::MatchSimulation automaticOffside;
     automaticOffside.start();
-    football::MatchSimulationTestAccess::setPlayer(10, 10, {8.0f, 0.0f});
-    football::MatchSimulationTestAccess::setPlayer(10, 9, {25.0f, 0.0f});
+    football::MatchSimulationTestAccess::setPlayer(automaticOffside, 10, {8.0f, 0.0f});
+    football::MatchSimulationTestAccess::setPlayer(automaticOffside, 9, {25.0f, 0.0f});
     for (int id = 11; id < 22; ++id)
         football::MatchSimulationTestAccess::setPlayer(automaticOffside, id, {id == 11 ? 35.0f : 20.0f, static_cast<float>(id - 16)});
     football::MatchSimulationTestAccess::setBall(automaticOffside, {8.0f, 0.0f}, 10);
