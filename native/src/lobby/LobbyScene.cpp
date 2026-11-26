@@ -119,9 +119,10 @@ void ring(std::vector<LobbyVertex>& out,float cx,float cz,float radius,float wid
 } // namespace
 
 void LobbyScene::build() {
-    environment_.clear(); player_.clear();
+    environment_.clear(); player_.clear(); ball_.clear();
     buildEnvironment();
     buildPlayerModel();
+    buildBall();
     updateFormation();
 }
 void LobbyScene::setFormation(int formation) {
@@ -130,6 +131,7 @@ void LobbyScene::setFormation(int formation) {
 }
 const std::vector<LobbyVertex>& LobbyScene::environmentVertices() const noexcept { return environment_; }
 const std::vector<LobbyVertex>& LobbyScene::playerVertices() const noexcept { return player_; }
+const std::vector<LobbyVertex>& LobbyScene::ballVertices() const noexcept { return ball_; }
 const std::array<LobbyPlayerPosition,11>& LobbyScene::playerPositions() const noexcept { return positions_; }
 
 void LobbyScene::updateFormation() {
@@ -224,6 +226,14 @@ void LobbyScene::buildEnvironment() {
     // Technical area and touchline walkways.
     box(environment_,{0,.12F,38.8F},{112,.18F,2.0F},{.30F,.34F,.39F,1});
     box(environment_,{0,.12F,-38.8F},{112,.18F,2.0F},{.30F,.34F,.39F,1});
+}
+
+void LobbyScene::buildBall() {
+    const Color white{.94F,.95F,.91F,1.0F};
+    const Color black{.035F,.045F,.06F,1.0F};
+    ellipsoid(ball_,{0.0F,0.0F,0.0F},{.23F,.23F,.23F},white,20,12);
+    // Small dark panels give the ball visible contrast at match-camera distance.
+    ellipsoid(ball_,{0.0F,.0F,-.215F},{.075F,.075F,.025F},black,10,7);
 }
 
 void LobbyScene::buildPlayerModel() {
