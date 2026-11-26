@@ -55,6 +55,13 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
 
     void resetMatch() { if (engineHandle != 0L) NativeBridge.nativeResetMatch(engineHandle); }
 
+
+    void setControlRole(int role) { if (engineHandle != 0L) NativeBridge.nativeSetControlRole(engineHandle, role); }
+    boolean selectPlayer(int playerId) { return engineHandle != 0L && NativeBridge.nativeSelectPlayer(engineHandle, playerId); }
+    boolean movePlayer(float x, float y) { return engineHandle != 0L && NativeBridge.nativeMovePlayer(engineHandle, x, y); }
+    boolean playerAction(int action, int target, float x, float y) { return engineHandle != 0L && NativeBridge.nativePlayerAction(engineHandle, action, target, x, y); }
+    boolean refereeSendOff(int playerId) { return engineHandle != 0L && NativeBridge.nativeRefereeSendOff(engineHandle, playerId); }
+
     void releaseNativeEngine() {
         if (engineHandle != 0L) {
             NativeBridge.nativeDestroy(engineHandle);
