@@ -40,6 +40,11 @@ void MatchSimulation::initializeTeams() {
             p.jumpHeight = 0.0f;
             p.jumpVelocity = 0.0f;
             p.aerialCooldown = 0.0f;
+            // Position-based base attributes; squad data can override these values.
+            p.jumping = i == 0 ? 0.0f : (i == 2 || i == 3 || i == 4 || i >= 8 ? 78.0f : 62.0f);
+            p.heading = (i == 2 || i == 3 || i == 4 || i >= 8) ? 76.0f : 58.0f;
+            p.strength = (i >= 1 && i <= 4) ? 78.0f : (i >= 8 ? 72.0f : 60.0f);
+            p.aggression = (i >= 1 && i <= 4) ? 68.0f : 54.0f;
         }
     }
     ball_ = {};
@@ -399,11 +404,9 @@ void MatchSimulation::updateBall(float dt) {
             if (ball_.verticalVelocity < 0.65f) ball_.verticalVelocity = 0.0f;
         }
     }
-    // Aerial contest: active outfield players can jump to challenge an airborne ball.
+    // Aerial challenge: attribute-based jumping, body contact and foul detection.
     if (ball_.height > 0.45f && ball_.height < 4.2f &&
         std::fabs(ball_.position.x) < kPitchHalfLength && std::fabs(ball_.position.y) < kPitchHalfWidth) {
-        int winner = -1;
-        float bestReach = -1.0f;
         for (int i = 0; i < kPlayerCount; ++i) {
             Player& candidate = players_[i];
             if (candidate.sentOff || candidate.role == 0 ||
@@ -411,21 +414,75 @@ void MatchSimulation::updateBall(float dt) {
             if (candidate.jumpHeight < 0.05f && candidate.aerialCooldown <= 0.0f &&
                 ball_.height > 0.85f && ball_.height < 3.4f) {
                 const float towardBall = (ball_.position.x - candidate.position.x) * (candidate.team == 0 ? 1.0f : -1.0f);
-                if (towardBall > -1.5f) {
-                    candidate.jumpVelocity = 5.2f + std::min(0.45f, candidate.stamina * 0.45f);
+                if (towardBall > -1.5f && candidate.stamina > 0.035f) {
+                    candidate.jumpVelocity = 4.7f + candidate.jumping * 0.018f;
                     candidate.jumpHeight = 0.01f;
                     candidate.aerialCooldown = 0.65f;
                     candidate.animation = PlayerAnimation::Jump;
                     candidate.animationSeconds = 0.72f;
+                    candidate.stamina = std::max(0.0f, candidate.stamina - 0.018f);
                 }
             }
+        }
+
+        // Opponents are separated on contact. Reckless high-speed aerial contact is penalized.
+        for (int i = 0; i < kPlayerCount; ++i) {
+            Player& first = players_[i];
+            if (first.sentOff || first.role == 0 || first.jumpHeight < 0.18f) continue;
+            for (int j = i + 1; j < kPlayerCount; ++j) {
+                Player& second = players_[j];
+                if (second.sentOff || second.role == 0 || second.team == first.team ||
+                    second.jumpHeight < 0.18f) continue;
+                const Vec2 delta{second.position.x - first.position.x, second.position.y - first.position.y};
+                const float separation = distance(first.position, second.position);
+                if (separation >= 1.05f) continue;
+                const Vec2 normal = separation > 0.001f
+                    ? Vec2{delta.x / separation, delta.y / separation}
+                    : Vec2{first.team == 0 ? 1.0f : -1.0f, 0.0f};
+                const float firstSpeed = std::sqrt(first.velocity.x * first.velocity.x + first.velocity.y * first.velocity.y);
+                const float secondSpeed = std::sqrt(second.velocity.x * second.velocity.x + second.velocity.y * second.velocity.y);
+                const bool firstReckless = firstSpeed > 8.2f && first.aggression >= 70.0f;
+                const bool secondReckless = secondSpeed > 8.2f && second.aggression >= 70.0f;
+                if (firstReckless || secondReckless) {
+                    Player& offender = firstReckless ? first : second;
+                    Player& victim = firstReckless ? second : first;
+                    offender.animation = PlayerAnimation::AerialContact;
+                    offender.animationSeconds = 0.62f;
+                    victim.animation = PlayerAnimation::AerialFall;
+                    victim.animationSeconds = 0.95f;
+                    victim.jumpVelocity = 0.0f;
+                    registerFoul(offender.id);
+                    return;
+                }
+                first.position.x -= normal.x * 0.08f;
+                first.position.y -= normal.y * 0.08f;
+                second.position.x += normal.x * 0.08f;
+                second.position.y += normal.y * 0.08f;
+                clampPlayer(first);
+                clampPlayer(second);
+                first.animation = PlayerAnimation::AerialContact;
+                second.animation = PlayerAnimation::AerialContact;
+                first.animationSeconds = second.animationSeconds = 0.24f;
+            }
+        }
+
+        int winner = -1;
+        float bestScore = -1.0e9f;
+        for (int i = 0; i < kPlayerCount; ++i) {
+            const Player& candidate = players_[i];
+            if (candidate.sentOff || candidate.role == 0 || candidate.jumpHeight < 0.12f ||
+                distance(candidate.position, ball_.position) > 2.45f) continue;
             const float reach = candidate.jumpHeight + (candidate.role == 10 ? 0.22f : 0.0f);
-            if (reach + 0.85f >= ball_.height && reach > bestReach) {
-                bestReach = reach;
+            if (reach + 0.85f < ball_.height) continue;
+            const float proximity = distance(candidate.position, ball_.position);
+            const float contestScore = reach + candidate.jumping * 0.0035f +
+                candidate.strength * 0.0025f + candidate.stamina * 0.12f - proximity * 0.10f;
+            if (contestScore > bestScore) {
+                bestScore = contestScore;
                 winner = i;
             }
         }
-        if (winner >= 0 && bestReach >= ball_.height - 0.65f) {
+        if (winner >= 0 && players_[winner].jumpHeight + 0.85f >= ball_.height) {
             Player& challenger = players_[winner];
             ball_.owner = winner;
             ball_.lastTouchTeam = challenger.team;
@@ -696,7 +753,7 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
         }
         case PlayerAction::Jump:
             if (player.role == 0 || player.jumpHeight > 0.05f || player.aerialCooldown > 0.0f || player.stamina < 0.08f) return false;
-            player.jumpVelocity = 5.8f;
+            player.jumpVelocity = 4.7f + player.jumping * 0.018f;
             player.jumpHeight = 0.01f;
             player.aerialCooldown = 0.42f;
             player.animation = PlayerAnimation::Jump;
@@ -709,15 +766,22 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
                 ball_.height > player.jumpHeight + 2.0f) return false;
             Vec2 aim = direction;
             if (aim.x == 0.0f && aim.y == 0.0f) aim = {player.team == 0 ? 1.0f : -1.0f, 0.0f};
+            // Heading controls directional error and contact quality; strength adds ball speed.
+            const float accuracy = std::max(0.0f, std::min(1.0f, player.heading / 100.0f));
+            const float error = (1.0f - accuracy) * 0.22f * (player.id % 2 == 0 ? 1.0f : -1.0f);
+            const float cosine = std::cos(error), sine = std::sin(error);
+            aim = normalized({aim.x * cosine - aim.y * sine, aim.x * sine + aim.y * cosine});
+            const float power = 11.5f + player.heading * 0.055f + player.strength * 0.025f;
             ball_.owner = -1;
             ball_.lastTouchTeam = player.team;
             ball_.position = player.position;
-            ball_.velocity = {aim.x * 17.5f, aim.y * 17.5f};
+            ball_.velocity = {aim.x * power, aim.y * power};
             ball_.height = std::max(0.75f, ball_.height);
-            ball_.verticalVelocity = 3.0f;
+            ball_.verticalVelocity = 1.0f + player.heading * 0.022f;
             player.animation = PlayerAnimation::Header;
             player.animationSeconds = 0.55f;
-            player.jumpVelocity = std::max(0.0f, player.jumpVelocity * 0.45f);
+            player.jumpVelocity = std::max(0.0f, player.jumpVelocity * 0.35f);
+            player.stamina = std::max(0.0f, player.stamina - 0.012f);
             return true;
         }
         case PlayerAction::Tackle: {

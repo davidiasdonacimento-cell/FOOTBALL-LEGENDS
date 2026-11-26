@@ -284,19 +284,52 @@ void Renderer::render() {
         const float pose=matchActive_?matchPositions_[i].pose:0.0F;
         const float poseTime=matchActive_?matchPositions_[i].poseTime:0.0F;
         const float poseBlend=std::min(1.0F,poseTime*3.5F);
-        const bool falling=pose==5.0F;
+        const bool falling=pose==5.0F||pose==11.0F;
         const bool recovering=pose==6.0F;
         const bool highCatching=pose==7.0F;
-        const float bob=(pose==3.0F||falling)?-.24F*poseBlend:(recovering?-.12F*(1.0F-poseBlend):std::sin(phase*2.0F)*.012F);
+        const bool jumping=pose==8.0F;
+        const bool heading=pose==9.0F;
+        const bool aerialContact=pose==10.0F;
+        const float jumpProgress=std::max(0.0F,std::min(1.0F,1.0F-poseTime/.72F));
+        const float jumpLift=jumping?std::sin(jumpProgress*3.14159265F)*.58F:0.0F;
+        const float bob=(pose==3.0F||falling)?-.24F*poseBlend:
+            (recovering?-.12F*(1.0F-poseBlend):jumpLift+std::sin(phase*2.0F)*.012F);
         const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
         const float protestBlend=(pose==1.0F||pose==2.0F)?std::min(1.0F,poseTime*2.8F):0.0F;
         const bool diving=pose==3.0F;
         const bool catching=pose==4.0F;
-        const float armSwing=(catching||highCatching)?(highCatching?1.42F:1.15F)*poseBlend:(diving?1.25F*poseBlend:std::sin(phase)*.075F+1.05F*protestBlend);
-        const float oppositeArm=(catching||highCatching)?armSwing:(diving?-1.25F*poseBlend:-armSwing);
-        const float legSwing=(diving||falling)?.45F:std::sin(phase)*.045F;
-        const float bodyLean=diving?1.20F*poseBlend:(falling?1.48F*poseBlend:(recovering?0.65F*(1.0F-poseBlend):0.0F));
+        float armSwing=std::sin(phase)*.075F+1.05F*protestBlend;
+        float oppositeArm=-armSwing;
+        float legSwing=std::sin(phase)*.045F;
+        float bodyLean=0.0F;
+        if(catching||highCatching) {
+            armSwing=(highCatching?1.42F:1.15F)*poseBlend;
+            oppositeArm=armSwing;
+        } else if(diving) {
+            armSwing=1.25F*poseBlend;
+            oppositeArm=-1.25F*poseBlend;
+            legSwing=.45F;
+            bodyLean=1.20F*poseBlend;
+        } else if(jumping) {
+            armSwing=-.95F*poseBlend;
+            oppositeArm=.95F*poseBlend;
+            legSwing=.34F*poseBlend;
+        } else if(heading) {
+            armSwing=-.72F*poseBlend;
+            oppositeArm=.62F*poseBlend;
+            bodyLean=-.58F*poseBlend;
+        } else if(aerialContact) {
+            armSwing=-.85F*poseBlend;
+            oppositeArm=.85F*poseBlend;
+            bodyLean=.28F*poseBlend;
+        }
+        if(falling) {
+            legSwing=.45F;
+            bodyLean=1.48F*poseBlend;
+        } else if(recovering) {
+            bodyLean=.65F*(1.0F-poseBlend);
+        }
         const Mat4 rootPose=bodyLean>0.0F?rotationAroundX({0,.82F,0},bodyLean):identity();
         const Mat4 bones[5]={
             rootPose,

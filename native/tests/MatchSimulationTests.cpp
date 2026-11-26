@@ -20,6 +20,18 @@ struct MatchSimulationTestAccess {
         match.ball_.velocity = velocity;
     }
     static void setLastTouchTeam(MatchSimulation& match, int team) { match.ball_.lastTouchTeam = team; }
+    static void setAerialState(MatchSimulation& match, int id, float height, float velocity = 0.0f) {
+        match.players_[id].jumpHeight = height;
+        match.players_[id].jumpVelocity = velocity;
+        match.players_[id].aerialCooldown = 0.5f;
+    }
+    static void setAerialAttributes(MatchSimulation& match, int id, float jumping, float heading,
+                                   float strength, float aggression = 50.0f) {
+        match.players_[id].jumping = jumping;
+        match.players_[id].heading = heading;
+        match.players_[id].strength = strength;
+        match.players_[id].aggression = aggression;
+    }
 };
 }
 
@@ -156,6 +168,62 @@ int main() {
     football::MatchSimulationTestAccess::setBallHeight(airborneBall, 1.0f, 3.0f);
     airborneBall.update(0.05f);
     assert(airborneBall.ball().height > 1.0f);
+
+    football::MatchSimulation jumpTest;
+    jumpTest.start();
+    football::MatchSimulationTestAccess::setAerialAttributes(jumpTest, 10, 95.0f, 60.0f, 60.0f);
+    assert(jumpTest.command(10, football::PlayerAction::Jump));
+    assert(jumpTest.players()[10].jumpVelocity > 6.3f);
+    jumpTest.update(0.05f);
+    assert(jumpTest.players()[10].jumpHeight > 0.25f);
+    assert(jumpTest.players()[10].animation == football::PlayerAnimation::Jump);
+
+    football::MatchSimulation headerLow;
+    football::MatchSimulation headerHigh;
+    headerLow.start();
+    headerHigh.start();
+    football::MatchSimulationTestAccess::setPlayer(headerLow, 10, {0.0f, 0.0f});
+    football::MatchSimulationTestAccess::setPlayer(headerHigh, 10, {0.0f, 0.0f});
+    football::MatchSimulationTestAccess::setBall(headerLow, {0.8f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBall(headerHigh, {0.8f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(headerLow, 1.2f);
+    football::MatchSimulationTestAccess::setBallHeight(headerHigh, 1.2f);
+    football::MatchSimulationTestAccess::setAerialState(headerLow, 10, 0.9f);
+    football::MatchSimulationTestAccess::setAerialState(headerHigh, 10, 0.9f);
+    football::MatchSimulationTestAccess::setAerialAttributes(headerLow, 10, 60.0f, 25.0f, 55.0f);
+    football::MatchSimulationTestAccess::setAerialAttributes(headerHigh, 10, 60.0f, 95.0f, 85.0f);
+    assert(headerLow.command(10, football::PlayerAction::Header, -1, 1.0f, 1.0f));
+    assert(headerHigh.command(10, football::PlayerAction::Header, -1, 1.0f, 1.0f));
+    const float lowPower = std::sqrt(headerLow.ball().velocity.x * headerLow.ball().velocity.x +
+                                     headerLow.ball().velocity.y * headerLow.ball().velocity.y);
+    const float highPower = std::sqrt(headerHigh.ball().velocity.x * headerHigh.ball().velocity.x +
+                                      headerHigh.ball().velocity.y * headerHigh.ball().velocity.y);
+    assert(highPower > lowPower);
+    assert(headerHigh.ball().velocity.x > 0.0f && headerHigh.ball().velocity.y > 0.0f);
+    assert(headerHigh.ball().lastTouchTeam == 0);
+    assert(headerHigh.players()[10].animation == football::PlayerAnimation::Header);
+
+    football::MatchSimulation groundedHeader;
+    groundedHeader.start();
+    football::MatchSimulationTestAccess::setBall(groundedHeader, {0.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(groundedHeader, 1.0f);
+    assert(!groundedHeader.command(10, football::PlayerAction::Header, -1, 1.0f, 0.0f));
+
+    football::MatchSimulation aerialFoul;
+    aerialFoul.start();
+    football::MatchSimulationTestAccess::setPlayer(aerialFoul, 10, {0.0f, 0.0f});
+    football::MatchSimulationTestAccess::setPlayer(aerialFoul, 14, {0.72f, 0.0f});
+    football::MatchSimulationTestAccess::setBall(aerialFoul, {0.35f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(aerialFoul, 1.35f);
+    football::MatchSimulationTestAccess::setAerialState(aerialFoul, 10, 0.8f);
+    football::MatchSimulationTestAccess::setAerialState(aerialFoul, 14, 0.8f);
+    football::MatchSimulationTestAccess::setAerialAttributes(aerialFoul, 10, 80.0f, 70.0f, 85.0f, 95.0f);
+    assert(aerialFoul.command(10, football::PlayerAction::Sprint, -1, 1.0f, 0.0f));
+    aerialFoul.update(0.05f);
+    assert(aerialFoul.event() == football::MatchEvent::Foul);
+    assert(aerialFoul.state() == football::MatchState::Paused);
+    assert(aerialFoul.players()[10].animation == football::PlayerAnimation::AerialContact);
+    assert(aerialFoul.players()[14].animation == football::PlayerAnimation::AerialFall);
 
     football::MatchSimulation automaticOffside;
     automaticOffside.start();

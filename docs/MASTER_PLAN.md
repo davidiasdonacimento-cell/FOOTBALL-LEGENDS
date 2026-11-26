@@ -838,7 +838,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 46. DISPUTAS AÉREAS, SALTOS E CABECEIOS — 2026-11-26
 
 ## Implementação na branch nativa
-- **Status:** código integrado; aguardando CI. Teste em Android físico ainda pendente.
+- **Status:** TESTADO em CI na execução `45852348973`; testes nativos existentes, compilação Android Debug e envio do APK foram aprovados. Teste em Android físico ainda pendente.
 - Novos comandos reais de salto e cabeceio foram adicionados ao motor e ligados a botões na interface da partida.
 - O salto aplica velocidade vertical, gravidade, altura individual do atleta, cooldown e custo de resistência; goleiros não usam o salto de linha.
 - O cabeceio exige o atleta no ar, bola sem posse, distância de contato e faixa de altura válida. O contato redireciona a bola com velocidade e componente vertical, registrando o último toque.
@@ -850,3 +850,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A disputa é um modelo físico simplificado: ainda não há colisão de corpos, empurrões, faltas específicas em disputa aérea, cabeceio direcionado por atributos, animação esquelética dedicada no renderer ou timing de impulsão aprendido pela IA.
 - A seleção de vencedor usa altura de salto e proximidade; ainda não simula força, impulsão, posicionamento de braço ou trajetória prevista.
 - Executar testes nativos e build Android Debug no CI. Validar botões, alcance, leitura da bola, animação e desempenho em dispositivo físico antes de considerar a experiência finalizada.
+
+
+# 47. DISPUTA AÉREA AVANÇADA — CONTATO, FALTAS, ANIMAÇÕES E ATRIBUTOS — 2026-11-26
+
+## Implementação desta revisão
+- **Status:** código preparado na branch; aguardando execução única do CI.
+- Atributos individuais de impulsão, cabeceio, força e agressividade passam a influenciar salto, qualidade do contato, disputa e risco de infração.
+- O cabeceio usa a direção escolhida pelo jogador, aplica desvio angular proporcional à precisão do atributo de cabeceio e calcula potência/elevação conforme cabeceio e força.
+- Disputas entre adversários aplicam separação corporal simplificada; o vencedor é calculado por alcance, impulsão, força, resistência e proximidade.
+- Contato aéreo em alta velocidade com agressividade elevada gera falta, pausa a partida e diferencia a pose do infrator e do atleta atingido.
+- O renderer representa salto com elevação procedural, braços erguidos e pernas recolhidas; cabeceio com inclinação de tronco; contato e queda com poses próprias.
+- Testes adicionados para impulsão, salto, cabeceio direcional, influência de atributos na potência, rejeição de cabeceio no chão e falta em colisão aérea.
+
+## Limites e validação
+- A separação corporal e o cálculo de falta são aproximações 2D, não um solver físico 3D completo nem interpretação integral das regras de disputa aérea.
+- A precisão do cabeceio usa uma variação determinística pequena para manter os testes reprodutíveis; ainda não há sistema de atributos carregado de elenco, animação por esqueleto completo, IK de pescoço ou contato de cabeça modelado em 3D.
+- A execução de CI deve aprovar testes nativos e APK Debug. O comportamento visual, resposta dos botões e desempenho ainda precisam ser verificados em Android físico.
