@@ -169,6 +169,8 @@ void LobbyScene::buildEnvironment() {
     const Color concrete{.18F,.22F,.29F,1};
     const Color seatBlue{.035F,.13F,.34F,1}, seatCyan{.05F,.32F,.43F,1};
     const Color roof{.055F,.085F,.14F,1};
+    // A dark, slightly lower runoff separates the playing surface from the stadium walkways.
+    groundRect(environment_,-57.0F,-38.0F,57.0F,38.0F,-.018F,{.035F,.17F,.075F,1});
     // Full-size presentation pitch: 110 x 72 metres, slightly broader than a compact mobile pitch.
     for(int i=0;i<11;++i) {
         const float x0=-55.0F+static_cast<float>(i)*10.0F;
@@ -225,6 +227,64 @@ void LobbyScene::buildEnvironment() {
         box(environment_,{xSide,h,0},{1.02F,.42F,80},seat);
         box(environment_,{-xSide,h,0},{1.02F,.42F,80},seat);
     }
+    // Static low-poly crowd silhouettes add stadium scale without per-frame draw calls.
+    const std::array<Color,6> crowdPalette{{
+        Color{.72F,.12F,.10F,1}, Color{.92F,.92F,.86F,1},
+        Color{.08F,.24F,.62F,1}, Color{.92F,.58F,.08F,1},
+        Color{.12F,.48F,.34F,1}, Color{.30F,.18F,.52F,1}
+    }};
+    const std::array<Color,3> skinPalette{{
+        Color{.62F,.39F,.27F,1}, Color{.82F,.60F,.43F,1}, Color{.34F,.22F,.16F,1}
+    }};
+    auto spectator=[&](float x,float y,float z,bool sideStand,int index) {
+        const Color shirt=crowdPalette[static_cast<std::size_t>(index)%crowdPalette.size()];
+        const Color skinTone=skinPalette[static_cast<std::size_t>(index*7+1)%skinPalette.size()];
+        const Vec3 bodySize=sideStand?Vec3{.22F,.48F,.34F}:Vec3{.34F,.48F,.22F};
+        box(environment_,{x,y,z},bodySize,shirt);
+        box(environment_,{x,y+.31F,z},{.18F,.18F,.18F},skinTone);
+    };
+    int spectatorIndex=0;
+    for(int row=0;row<15;row+=2) {
+        const float h=2.3F+static_cast<float>(row)*.48F;
+        const float zFront=40.0F+static_cast<float>(row)*1.05F;
+        for(int fan=0;fan<27;++fan) {
+            const float x=-62.0F+static_cast<float>(fan)*4.75F;
+            spectator(x,h+.48F,zFront,false,spectatorIndex++);
+            spectator(x,h+.48F,-zFront,false,spectatorIndex++);
+        }
+        const float xSide=62.0F+static_cast<float>(row)*1.05F;
+        for(int fan=0;fan<15;++fan) {
+            const float z=-34.0F+static_cast<float>(fan)*4.85F;
+            spectator(xSide,h+.48F,z,true,spectatorIndex++);
+            spectator(-xSide,h+.48F,z,true,spectatorIndex++);
+        }
+    }
+
+    // Perimeter LED-style advertising boards, built as static stadium geometry.
+    const Color boardBase{.018F,.035F,.065F,1};
+    const std::array<Color,4> boardPalette{{
+        Color{.02F,.48F,.68F,1}, Color{.92F,.94F,.96F,1},
+        Color{.08F,.20F,.48F,1}, Color{.10F,.58F,.42F,1}
+    }};
+    for(float sign:{-1.0F,1.0F}) {
+        const float z=sign*37.45F;
+        box(environment_,{0,.62F,z},{112,1.15F,.34F},boardBase);
+        for(int panel=0;panel<14;++panel) {
+            const float x=-52.0F+static_cast<float>(panel)*8.0F;
+            const Color panelColor=boardPalette[static_cast<std::size_t>(panel)%boardPalette.size()];
+            box(environment_,{x,.64F,z+sign*.19F},{7.65F,.78F,.08F},panelColor);
+        }
+    }
+    for(float sign:{-1.0F,1.0F}) {
+        const float x=sign*56.45F;
+        box(environment_,{x,.62F,0},{.34F,1.15F,70},boardBase);
+        for(int panel=0;panel<9;++panel) {
+            const float z=-32.0F+static_cast<float>(panel)*8.0F;
+            const Color panelColor=boardPalette[static_cast<std::size_t>(panel+2)%boardPalette.size()];
+            box(environment_,{x+sign*.19F,.64F,z},{.08F,.78F,7.65F},panelColor);
+        }
+    }
+
     // Upper decks and roof canopies.
     box(environment_,{0,10.4F,48},{140,.8F,13},roof);
     box(environment_,{0,10.4F,-48},{140,.8F,13},roof);

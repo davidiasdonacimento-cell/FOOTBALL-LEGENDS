@@ -673,3 +673,22 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Testar a cena no Android físico: qualidade do gramado, linhas, balizas, redes, escala dos jogadores, bola e fluidez.
 - Evoluir colisões de bola com postes/travessão/rede e revisar o enquadramento de replay.
 - Não declarar a fase concluída apenas com aprovação do CI: é necessário teste visual real no aparelho.
+
+
+# 38. CAMPO 3D — GRAMADO, TORCIDA E APRESENTAÇÃO DE ESTÁDIO — 2026-11-26
+
+## Implementação preparada nesta revisão
+- **Status:** código alterado na branch; aguardando CI único desta revisão e inspeção visual em Android físico.
+- O gramado ganhou variação procedural em múltiplas escalas: faixas de corte mais legíveis, microtextura e variação fina de superfície no shader.
+- Foi adicionada uma faixa de escape em volta do campo para separar visualmente a grama da área técnica.
+- As arquibancadas receberam silhuetas estáticas de torcedores em geometria leve, geradas uma única vez na construção da cena.
+- O perímetro recebeu painéis estáticos de publicidade em geometria 3D, sem depender de imagens externas ou rede.
+- Foi criado um teste nativo específico para validar construção da cena, quantidade mínima de geometria, valores finitos e posições das quatro formações.
+- O workflow existente foi ampliado para executar esse teste de cena antes de montar o APK; continua sendo uma única execução de CI por revisão.
+
+## Limites e critérios ainda pendentes
+- A torcida desta etapa é estática e estilizada; não representa pessoas animadas individualmente.
+- Os painéis são elementos visuais geométricos, ainda sem marcas, textos ou conteúdo dinâmico.
+- A textura do gramado é procedural no shader; não é uma textura fotográfica de alta resolução.
+- O teste automatizado valida a geometria gerada, mas não substitui a avaliação visual, de FPS, memória e temperatura no aparelho Android.
+- Não marcar a FASE 3 como concluída até verificar a cena em aparelho real e corrigir eventuais problemas de enquadramento ou desempenho.

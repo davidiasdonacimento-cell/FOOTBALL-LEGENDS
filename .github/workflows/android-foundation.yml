@@ -58,6 +58,15 @@ jobs:
             -o /tmp/match-simulation-tests
           /tmp/match-simulation-tests
 
+      - name: Run native stadium scene tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Inative/include \
+            native/src/lobby/LobbyScene.cpp \
+            native/tests/LobbySceneTests.cpp \
+            -o /tmp/lobby-scene-tests
+          /tmp/lobby-scene-tests
+
       - name: Assemble debug APK
         run: gradle assembleDebug
 

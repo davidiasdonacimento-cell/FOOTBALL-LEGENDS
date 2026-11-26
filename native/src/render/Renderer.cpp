@@ -63,10 +63,14 @@ void main() {
     float diffuse = max(dot(normal, lightDir), 0.0);
     float texel = texture(uMaterialTexture, fract(vUv * 2.7)).r;
     float grain = mix(0.94, 1.06, texel);
-    float grassBand = (vMaterial < 0.5) ? (0.965 + 0.035 * sin(vWorldPosition.x * 0.62)) : 1.0;
+    float grassBand = (vMaterial < 0.5) ? (0.925 + 0.075 * sin(vWorldPosition.x * 0.38)) : 1.0;
+    float grassBlades = (vMaterial < 0.5)
+        ? (0.982 + 0.018 * sin(vUv.x * 188.0 + sin(vUv.y * 63.0)) * sin(vUv.y * 217.0)) : 1.0;
+    float turfVariation = (vMaterial < 0.5)
+        ? (0.982 + 0.018 * sin(vUv.x * 23.0 + cos(vUv.y * 17.0))) : 1.0;
     float fabricWeave = (vMaterial > 0.5 && vMaterial < 1.5)
         ? (0.975 + 0.025 * sin(vUv.x * 420.0) * sin(vUv.y * 360.0)) : 1.0;
-    vec3 base = vColor.rgb * uTeamTint * grain * grassBand * fabricWeave;
+    vec3 base = vColor.rgb * uTeamTint * grain * grassBand * grassBlades * turfVariation * fabricWeave;
     float roughness = (vMaterial > 0.5 && vMaterial < 1.5) ? 0.48 : 0.82;
     vec3 halfDir = normalize(lightDir + viewDir);
     float specular = pow(max(dot(normal, halfDir), 0.0), mix(48.0, 10.0, roughness));
