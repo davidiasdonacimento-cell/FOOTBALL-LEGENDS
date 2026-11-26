@@ -1,5 +1,6 @@
 #pragma once
 
+#include "football/core/MatchSimulation.hpp"
 #include "football/render/Renderer.hpp"
 
 namespace football {
@@ -17,9 +18,15 @@ public:
     void renderFrame();
     void setLobbyFormation(int formation);
     void setCinematicCamera(bool enabled);
+    void startMatch();
+    void pauseMatch();
+    void resumeMatch();
+    void resetMatch();
+    const MatchSimulation& match() const { return match_; }
 
 private:
     Renderer renderer_;
+    MatchSimulation match_;
 };
 
 } // namespace football
