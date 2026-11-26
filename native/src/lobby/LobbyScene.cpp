@@ -407,11 +407,12 @@ void LobbyScene::buildPlayerNames() {
     for(int id=0;id<22;++id){
         const auto index=static_cast<std::size_t>(id);
         nameStarts_[index]=playerNames_.size();
-        const std::string name(names[index]);
+        std::string name(names[index]);
+        if(id<11) std::reverse(name.begin(),name.end());
         const float width=static_cast<float>(name.size())*(3.0F*cell+gap)-gap;
         const float left=-width*.5F;
-        const float z=id<11?-.145F:.145F;
-        const Vec3 normal=id<11?Vec3{0,0,-1}:Vec3{0,0,1};
+        const float z=id<11?.145F:-.145F;
+        const Vec3 normal=id<11?Vec3{0,0,1}:Vec3{0,0,-1};
         for(std::size_t n=0;n<name.size();++n){
             const auto rows=glyph(name[n]);
             for(int row=0;row<5;++row)for(int col=0;col<3;++col){

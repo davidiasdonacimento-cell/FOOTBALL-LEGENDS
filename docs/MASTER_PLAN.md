@@ -488,7 +488,8 @@ FOOTBALL LEGENDS deverá ser um jogo de futebol mobile 3D completo, com:
 - Locomoção anima braços e pernas com base na velocidade real dos jogadores; passe, chute/cruzamento, drible e desarme recebem poses próprias.
 - Modelos procedurais recebem variações controladas de altura e largura.
 - Nomes de 22 jogadores reais aparecem como geometria 3D branca sobre camisas genéricas: Alisson, Marquinhos, Militão, Van Dijk, Hakimi, Rodri, De Bruyne, Bellingham, Vinícius, Mbappé, Haaland, Courtois, Carvajal, Rúben Dias, Saliba, Theo, Valverde, Pedri, Musiala, Salah, Kane e Messi.
-- Testes nativos adicionados para falta após pausa manual e estado de animação do passe.
+- Testes nativos adicionados para falta após pausa manual, estado de animação do passe e presença de geometria de nome para os 22 jogadores.
+- Ajustada a orientação dos nomes para leitura nas camisas das duas equipes; a tinta de equipe agora afeta somente a camisa, preservando pele, shorts e demais materiais.
 - **Pendências:** confirmar legibilidade dos nomes, animações, arbitragem, IA e controles por toque em aparelho Android; modelos ainda são procedurais, não assets 3D licenciados/de alta fidelidade.
 
 **PRIORIDADE ABSOLUTA: JOGABILIDADE REAL, ESTABILIDADE, QUALIDADE VISUAL, ARQUITETURA PROFISSIONAL E FUNCIONALIDADE DE TODOS OS SISTEMAS.**

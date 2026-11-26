@@ -70,7 +70,8 @@ void main() {
         ? (0.982 + 0.018 * sin(vUv.x * 23.0 + cos(vUv.y * 17.0))) : 1.0;
     float fabricWeave = (vMaterial > 0.5 && vMaterial < 1.5)
         ? (0.975 + 0.025 * sin(vUv.x * 420.0) * sin(vUv.y * 360.0)) : 1.0;
-    vec3 base = vColor.rgb * uTeamTint * grain * grassBand * grassBlades * turfVariation * fabricWeave;
+    vec3 kitTint = (vMaterial > 0.5 && vMaterial < 1.5) ? uTeamTint : vec3(1.0);
+    vec3 base = vColor.rgb * kitTint * grain * grassBand * grassBlades * turfVariation * fabricWeave;
     float roughness = (vMaterial > 0.5 && vMaterial < 1.5) ? 0.48 : 0.82;
     vec3 halfDir = normalize(lightDir + viewDir);
     float specular = pow(max(dot(normal, halfDir), 0.0), mix(48.0, 10.0, roughness));

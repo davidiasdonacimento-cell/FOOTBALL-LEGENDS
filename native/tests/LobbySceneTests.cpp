@@ -6,6 +6,8 @@
 int main() {
     football::LobbyScene scene;
     scene.build();
+    assert(!scene.playerNameVertices().empty());
+    for(int player=0;player<22;++player) assert(scene.playerNameCount(player)>0);
 
     const auto& environment = scene.environmentVertices();
     const auto& players = scene.playerVertices();
