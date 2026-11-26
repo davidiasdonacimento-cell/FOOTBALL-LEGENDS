@@ -76,7 +76,15 @@ void MatchSimulation::start() {
     }
 }
 void MatchSimulation::pause() { if (state_ == MatchState::Running) state_ = MatchState::Paused; }
-void MatchSimulation::resume() { if (state_ == MatchState::Paused) state_ = MatchState::Running; }
+void MatchSimulation::resume() {
+    if (state_ != MatchState::Paused || event_ == MatchEvent::VarReview) return;
+    // A stoppage must use its designated restart, not simply unfreeze the clock.
+    if (event_ != MatchEvent::None && restartTeam_ >= 0) {
+        restartPlay();
+        return;
+    }
+    state_ = MatchState::Running;
+}
 void MatchSimulation::finish() { state_ = MatchState::Finished; }
 void MatchSimulation::setSpectatorMode(bool enabled) { spectatorMode_ = enabled; }
 void MatchSimulation::setControlRole(ControlRole role) {

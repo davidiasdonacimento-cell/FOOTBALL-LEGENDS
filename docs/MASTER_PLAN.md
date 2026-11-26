@@ -697,7 +697,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 39. FASE 4 — FÍSICA DE GOL E COLISÕES COM A BALIZA — 2026-11-26
 
 ## Implementação
-- **Status:** código atualizado; aguardando uma única execução de CI para esta revisão.
+- **Status:** TESTADO em CI na execução 45736218871 (testes nativos de partida e estádio aprovados; APK Debug montado e artefato enviado). Teste físico/visual no Android continua pendente.
 - Gol agora só é contabilizado quando a bola cruza a linha dentro da largura útil da baliza e abaixo do travessão.
 - Bola que passa ao lado ou acima da baliza não aumenta o placar.
 - Colisões simplificadas foram adicionadas para os dois postes e o travessão, com reflexão de velocidade.
@@ -709,3 +709,20 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Colisões de baliza são aproximações 2D com altura separada; ainda não são um solver físico 3D contínuo.
 - Ainda faltam rede deformável, contato corporal, desvio por jogadores e arbitragem completa para bola fora.
 - A aprovação de CI não comprova sensação de chute ou qualidade visual; validar no aparelho continua obrigatório.
+
+
+# 40. REINÍCIO CORRETO APÓS GOL E PARADAS — 2026-11-26
+
+## Correção de fluxo
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando CI.
+- A ação comum de continuar não pode apenas descongelar o relógio quando existe um evento que exige bola parada.
+- MatchSimulation::resume() agora encaminha eventos pausados com equipe de reinício definida para restartPlay().
+- A cobrança após gol executa a saída da equipe adversária, preservando o placar e a posse inicial correta.
+- Durante uma revisão VAR aberta, o comando comum de continuar não libera a partida antes da decisão do árbitro.
+- Pausas manuais sem evento continuam retomando normalmente.
+- Teste de regressão adicionado para reproduzir o fluxo de gol seguido do botão Continuar.
+
+## Validação pendente
+- Executar testes nativos e compilação Android Debug no mesmo workflow.
+- Testar o fluxo visual de gol, pausa, menu Continuar e saída no aparelho.
+- A correção não representa ainda a implementação de laterais, escanteios ou tiros de meta; esses reinícios permanecem no escopo seguinte da FASE 5.

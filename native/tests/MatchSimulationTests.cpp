@@ -101,6 +101,19 @@ int main() {
     assert(validGoal.state() == football::MatchState::Running);
     assert(validGoal.ball().owner >= 11 && validGoal.ball().owner < 22);
 
+    // The regular Continue action must execute the opponent kickoff after a goal.
+    football::MatchSimulation goalResume;
+    goalResume.start();
+    football::MatchSimulationTestAccess::setBall(goalResume, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(goalResume, {20.0f, 0.0f});
+    goalResume.update(0.05f);
+    assert(goalResume.state() == football::MatchState::Paused);
+    assert(goalResume.event() == football::MatchEvent::Goal);
+    goalResume.resume();
+    assert(goalResume.state() == football::MatchState::Running);
+    assert(goalResume.event() == football::MatchEvent::None);
+    assert(goalResume.ball().owner >= 11 && goalResume.ball().owner < 22);
+
     football::MatchSimulation wideShot;
     wideShot.start();
     football::MatchSimulationTestAccess::setBall(wideShot, {35.5f, 7.0f}, -1);
