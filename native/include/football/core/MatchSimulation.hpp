@@ -9,6 +9,7 @@ enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
 enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
 enum class ControlRole : std::uint8_t { Player, Referee };
 enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal };
+enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch };
 
 struct Player {
     int id{0};
@@ -20,6 +21,8 @@ struct Player {
     bool sentOff{false};
     int yellowCards{0};
     float protestSeconds{0.0f};
+    PlayerAnimation animation{PlayerAnimation::None};
+    float animationSeconds{0.0f};
 };
 
 struct Ball {
@@ -90,6 +93,7 @@ private:
     static Vec2 normalized(Vec2 value);
     static float distance(Vec2 a, Vec2 b);
 
+    friend struct MatchSimulationTestAccess;
     std::array<Player, kPlayerCount> players_{};
     Ball ball_{};
     MatchState state_{MatchState::Ready};
