@@ -192,7 +192,7 @@ int main() {
 
     football::MatchSimulation corner;
     corner.start();
-    football::MatchSimulationTestAccess::setBall(corner, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBall(corner, {35.5f, 4.5f}, -1);
     football::MatchSimulationTestAccess::setBallMotion(corner, {15.0f, 0.0f});
     football::MatchSimulationTestAccess::setLastTouchTeam(corner, 1);
     corner.update(0.05f);

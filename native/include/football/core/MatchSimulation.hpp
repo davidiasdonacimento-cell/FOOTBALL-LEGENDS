@@ -117,6 +117,7 @@ private:
     int advantageTeam_{-1};
     int advantagePlayer_{-1};
     float advantageSeconds_{0.0f};
+    int advantageScoreBefore_[2]{0, 0};
     int restartTeam_{-1};
     Vec2 restartPosition_{};
     Vec2 refereePosition_{};

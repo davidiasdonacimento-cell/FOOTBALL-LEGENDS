@@ -64,6 +64,7 @@ void MatchSimulation::reset() {
     advantageTeam_ = -1;
     advantagePlayer_ = -1;
     advantageSeconds_ = 0.0f;
+    advantageScoreBefore_[0] = advantageScoreBefore_[1] = 0;
     restartTeam_ = -1;
     restartPosition_ = {};
     refereePosition_ = {0.0f, -5.0f};
@@ -355,8 +356,21 @@ void MatchSimulation::update(float deltaSeconds) {
     if (advantageActive_) {
         if (event_ != MatchEvent::Advantage) {
             const int offender = advantagePlayer_;
-            advantageActive_ = false;
-            registerFoul(offender);
+            const bool advantageSucceeded = (event_ == MatchEvent::Goal && ball_.lastTouchTeam == advantageTeam_) ||
+                (event_ != MatchEvent::Goal && restartTeam_ == advantageTeam_);
+            if (advantageSucceeded) {
+                advantageActive_ = false;
+                advantageTeam_ = -1;
+                advantagePlayer_ = -1;
+                advantageSeconds_ = 0.0f;
+            } else {
+                if (event_ == MatchEvent::Goal) {
+                    scores_[0] = advantageScoreBefore_[0];
+                    scores_[1] = advantageScoreBefore_[1];
+                }
+                advantageActive_ = false;
+                registerFoul(offender);
+            }
         } else if (ball_.owner >= 0 && players_[ball_.owner].team == advantageTeam_) {
             advantageActive_ = false;
             advantageTeam_ = -1;
@@ -579,6 +593,8 @@ bool MatchSimulation::playAdvantage(int playerId) {
     advantageTeam_ = 1 - players_[playerId].team;
     advantagePlayer_ = playerId;
     advantageSeconds_ = 3.0f;
+    advantageScoreBefore_[0] = scores_[0];
+    advantageScoreBefore_[1] = scores_[1];
     event_ = MatchEvent::Advantage;
     eventPlayer_ = playerId;
     return true;
