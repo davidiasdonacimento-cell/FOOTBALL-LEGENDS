@@ -12,6 +12,10 @@ struct MatchSimulationTestAccess {
         match.ball_.owner = owner;
         match.ball_.velocity = {};
     }
+    static void setBallHeight(MatchSimulation& match, float height, float verticalVelocity = 0.0f) {
+        match.ball_.height = height;
+        match.ball_.verticalVelocity = verticalVelocity;
+    }
 };
 }
 
@@ -48,7 +52,12 @@ int main() {
     assert(keeperDive.ball().owner == 0);
     assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperDive);
     keeperDive.update(0.05f);
-    assert(keeperDive.players()[0].animationSeconds < 0.85f);
+    assert(keeperDive.players()[0].animationSeconds < 0.35f);
+    for (int i = 0; i < 7; ++i) keeperDive.update(0.05f);
+    assert(keeperDive.players()[0].animation == football::PlayerAnimation::KeeperFall ||
+           keeperDive.players()[0].animation == football::PlayerAnimation::KeeperRecover);
+    for (int i = 0; i < 20; ++i) keeperDive.update(0.05f);
+    assert(keeperDive.players()[0].animation == football::PlayerAnimation::None);
 
     football::MatchSimulation keeperCatch;
     keeperCatch.start();
@@ -57,6 +66,23 @@ int main() {
     assert(keeperCatch.command(0, football::PlayerAction::KeeperCatch));
     assert(keeperCatch.ball().owner == 0);
     assert(keeperCatch.players()[0].animation == football::PlayerAnimation::KeeperCatch);
+
+    football::MatchSimulation highBallKeeper;
+    highBallKeeper.start();
+    football::MatchSimulationTestAccess::setBall(highBallKeeper, {-30.0f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(highBallKeeper, 2.6f);
+    assert(highBallKeeper.selectControlledPlayer(0));
+    assert(highBallKeeper.command(0, football::PlayerAction::KeeperCatch));
+    assert(highBallKeeper.ball().owner == 0);
+    assert(highBallKeeper.ball().height == 0.0f);
+    assert(highBallKeeper.players()[0].animation == football::PlayerAnimation::KeeperHighCatch);
+
+    football::MatchSimulation airborneBall;
+    airborneBall.start();
+    football::MatchSimulationTestAccess::setBall(airborneBall, {0.0f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallHeight(airborneBall, 1.0f, 3.0f);
+    airborneBall.update(0.05f);
+    assert(airborneBall.ball().height > 1.0f);
 
     football::MatchSimulation automaticOffside;
     automaticOffside.start();
