@@ -483,3 +483,33 @@ FOOTBALL LEGENDS deverá ser um jogo de futebol mobile 3D completo, com:
 **PRIORIDADE ABSOLUTA: JOGABILIDADE REAL, ESTABILIDADE, QUALIDADE VISUAL, ARQUITETURA PROFISSIONAL E FUNCIONALIDADE DE TODOS OS SISTEMAS.**
 
 **REGRA FINAL:** nunca declarar sucesso sem evidência. Nunca marcar como concluído apenas porque um arquivo foi criado. O objetivo é entregar um jogo funcional, não apenas uma estrutura de projeto.
+
+
+# 31. REGISTRO DE IMPLEMENTAÇÃO — 2026-11-26
+
+## FASE 1 — FUNDAÇÃO
+- **Status:** TESTADO quanto à compilação de CI.
+- Java, JNI, C++17, OpenGL ES 3.0, CMake, Gradle e workflow Android estão integrados.
+- Execução GitHub Actions: `45725032103` — conclusão `success`.
+- A aprovação da compilação não comprova, por si só, execução e estabilidade em aparelho físico.
+
+## FASE 2 — LOBBY
+- **Status geral:** EM DESENVOLVIMENTO.
+- Commit de implementação: `3c2a0915b4c63a52d4f38d6f6afa4f8d5a786fc8`.
+- Ambiente de estádio 3D procedural integrado ao renderizador nativo OpenGL ES.
+- Campo de apresentação configurado em 110 x 72 metros.
+- Arquibancadas, cobertura, refletores, placar, marcações e traves adicionados à cena.
+- Onze modelos procedurais de jogadores, com volumes anatômicos arredondados, uniformes e movimento de repouso.
+- Quatro formações selecionáveis: 4-3-3, 4-4-2, 3-5-2 e 4-2-3-1. A escolha é salva localmente e reposiciona os modelos no cenário.
+- Interface Android com navegação entre início, modos, elenco, perfil e configurações.
+- Perfil local com nome persistido no dispositivo.
+- Configuração de câmera cinematográfica persistida e aplicada ao renderizador.
+- Os cartões de modos informam corretamente que as partidas e os demais modos ainda dependem das fases de gameplay e modos; não simulam partidas funcionais.
+- Compilação GitHub Actions: execução `45726314758` — conclusão `success`.
+- Artefato Debug publicado: `football-legends-foundation-debug`, ID `15074835805`.
+- **Não existe ainda validação visual ou teste de execução em aparelho Android nesta fase.**
+- Pendente: inspeção visual no dispositivo, testes de navegação e persistência em execução real, evolução do gerenciamento do elenco, animações esqueléticas completas, materiais/texturas e integração futura dos modos com o motor de partida.
+- Não marcar a FASE 2 como CONCLUÍDA até que os testes em dispositivo e os critérios correspondentes sejam verificados.
+
+## REGRA DE EVIDÊNCIA
+Uma compilação CI aprovada comprova que o projeto compilou e que o artefato foi gerado. Ela não comprova, isoladamente, qualidade visual, ausência de crash em aparelho físico ou funcionamento de recursos que ainda dependem de fases posteriores.
