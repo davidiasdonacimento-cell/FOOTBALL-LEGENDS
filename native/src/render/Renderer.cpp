@@ -7,6 +7,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace football {
 namespace {
@@ -16,34 +18,63 @@ constexpr char kVertexShader[] = R"(#version 300 es
 layout(location=0) in vec3 aPosition;
 layout(location=1) in vec3 aNormal;
 layout(location=2) in vec4 aColor;
+layout(location=3) in vec2 aUv;
+layout(location=4) in vec4 aBoneIndices;
+layout(location=5) in vec4 aBoneWeights;
+layout(location=6) in float aMaterial;
 uniform mat4 uMvp;
 uniform mat4 uModel;
+uniform mat4 uBones[5];
 out vec3 vNormal;
 out vec4 vColor;
 out vec3 vWorldPosition;
+out vec2 vUv;
+out float vMaterial;
 void main() {
-    vec4 world = uModel * vec4(aPosition, 1.0);
+    mat4 skin = uBones[int(aBoneIndices.x)] * aBoneWeights.x
+              + uBones[int(aBoneIndices.y)] * aBoneWeights.y
+              + uBones[int(aBoneIndices.z)] * aBoneWeights.z
+              + uBones[int(aBoneIndices.w)] * aBoneWeights.w;
+    vec4 localPosition = skin * vec4(aPosition, 1.0);
+    vec4 world = uModel * localPosition;
     vWorldPosition = world.xyz;
-    vNormal = normalize(mat3(uModel) * aNormal);
+    vNormal = normalize(mat3(uModel) * mat3(skin) * aNormal);
     vColor = aColor;
-    gl_Position = uMvp * vec4(aPosition, 1.0);
+    vUv = aUv;
+    vMaterial = aMaterial;
+    gl_Position = uMvp * localPosition;
 })";
 constexpr char kFragmentShader[] = R"(#version 300 es
 precision highp float;
 in vec3 vNormal;
 in vec4 vColor;
 in vec3 vWorldPosition;
+in vec2 vUv;
+in float vMaterial;
 uniform vec3 uCameraPosition;
 uniform vec3 uLightDirection;
+uniform sampler2D uMaterialTexture;
 out vec4 outColor;
 void main() {
-    float diffuse = max(dot(normalize(vNormal), normalize(-uLightDirection)), 0.0);
-    float lighting = 0.42 + diffuse * 0.72;
-    vec3 lit = vColor.rgb * lighting;
+    vec3 normal = normalize(vNormal);
+    vec3 lightDir = normalize(-uLightDirection);
+    vec3 viewDir = normalize(uCameraPosition - vWorldPosition);
+    float diffuse = max(dot(normal, lightDir), 0.0);
+    float texel = texture(uMaterialTexture, fract(vUv * 2.7)).r;
+    float grain = mix(0.94, 1.06, texel);
+    float grassBand = (vMaterial < 0.5) ? (0.965 + 0.035 * sin(vWorldPosition.x * 0.62)) : 1.0;
+    float fabricWeave = (vMaterial > 0.5 && vMaterial < 1.5)
+        ? (0.975 + 0.025 * sin(vUv.x * 420.0) * sin(vUv.y * 360.0)) : 1.0;
+    vec3 base = vColor.rgb * grain * grassBand * fabricWeave;
+    float roughness = (vMaterial > 0.5 && vMaterial < 1.5) ? 0.48 : 0.82;
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float specular = pow(max(dot(normal, halfDir), 0.0), mix(48.0, 10.0, roughness));
+    float lighting = 0.30 + diffuse * 0.82;
+    vec3 lit = base * lighting + vec3(0.16,0.20,0.24) * specular * (1.0 - roughness) * 0.32;
     float distanceToCamera = length(vWorldPosition - uCameraPosition);
-    float fog = smoothstep(92.0, 165.0, distanceToCamera);
+    float fog = smoothstep(100.0, 180.0, distanceToCamera);
     vec3 sky = vec3(0.035, 0.065, 0.105);
-    outColor = vec4(mix(lit, sky, fog * 0.78), vColor.a);
+    outColor = vec4(mix(lit, sky, fog * 0.72), vColor.a);
 })";
 
 struct Vec3 { float x,y,z; };
@@ -78,6 +109,14 @@ Mat4 lookAt(Vec3 eye,Vec3 center,Vec3 up) {
     r.v[12]=-dot(s,eye); r.v[13]=-dot(u,eye); r.v[14]=dot(f,eye);
     return r;
 }
+Mat4 rotationAroundX(Vec3 pivot,float angle) {
+    Mat4 t=identity(),rot=identity(),back=identity();
+    const float c=std::cos(angle),s=std::sin(angle);
+    rot.v[5]=c; rot.v[6]=s; rot.v[9]=-s; rot.v[10]=c;
+    t.v[12]=pivot.x; t.v[13]=pivot.y; t.v[14]=pivot.z;
+    back.v[12]=-pivot.x; back.v[13]=-pivot.y; back.v[14]=-pivot.z;
+    return multiply(multiply(t,rot),back);
+}
 Mat4 modelAt(float x,float y,float z,float yaw) {
     Mat4 r=identity(); const float c=std::cos(yaw),s=std::sin(yaw);
     r.v[0]=c; r.v[2]=-s; r.v[8]=s; r.v[10]=c;
@@ -90,6 +129,14 @@ void configureVertexLayout() {
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,normal)));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2,4,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,color)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,2,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,uv)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4,4,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,boneIndices)));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5,4,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,boneWeights)));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6,1,GL_FLOAT,GL_FALSE,sizeof(LobbyVertex),reinterpret_cast<void*>(offsetof(LobbyVertex,material)));
 }
 } // namespace
 
@@ -127,9 +174,33 @@ void Renderer::initialize() {
     modelLocation_=glGetUniformLocation(program_,"uModel");
     cameraLocation_=glGetUniformLocation(program_,"uCameraPosition");
     lightLocation_=glGetUniformLocation(program_,"uLightDirection");
+    bonesLocation_=glGetUniformLocation(program_,"uBones[0]");
+    textureLocation_=glGetUniformLocation(program_,"uMaterialTexture");
+    createMaterialTexture();
     uploadScene();
     initialized_=environmentVao_!=0&&playerVao_!=0;
     if(initialized_) __android_log_print(ANDROID_LOG_INFO,kLogTag,"3D lobby stadium and player models initialized.");
+}
+
+void Renderer::createMaterialTexture() {
+    constexpr int size=128;
+    std::vector<std::uint8_t> pixels(size*size*4);
+    for(int y=0;y<size;++y) for(int x=0;x<size;++x) {
+        const std::uint32_t hash=static_cast<std::uint32_t>(x*374761393U+y*668265263U+0x9e3779b9U);
+        const std::uint32_t noise=(hash^(hash>>13U))*1274126177U;
+        const std::uint8_t value=static_cast<std::uint8_t>(112U+(noise%48U));
+        const std::size_t offset=static_cast<std::size_t>((y*size+x)*4);
+        pixels[offset]=value; pixels[offset+1]=value; pixels[offset+2]=value; pixels[offset+3]=255U;
+    }
+    glGenTextures(1,&materialTexture_);
+    glBindTexture(GL_TEXTURE_2D,materialTexture_);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,size,size,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D,0);
 }
 
 void Renderer::uploadScene() {
@@ -174,6 +245,11 @@ void Renderer::render() {
     glUseProgram(program_);
     glUniform3f(cameraLocation_,eye.x,eye.y,eye.z);
     glUniform3f(lightLocation_,-.35F,-1.0F,-.25F);
+    glUniform1i(textureLocation_,0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,materialTexture_);
+    const Mat4 rootBones[5]={identity(),identity(),identity(),identity(),identity()};
+    glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
     glUniformMatrix4fv(modelLocation_,1,GL_FALSE,world.v.data());
     glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,vp.v.data());
     glBindVertexArray(environmentVao_);
@@ -183,15 +259,26 @@ void Renderer::render() {
     const auto& positions=scene_.playerPositions();
     const GLsizei playerCount=static_cast<GLsizei>(scene_.playerVertices().size());
     for(std::size_t i=0;i<positions.size();++i) {
-        const float bob=std::sin(seconds*1.7F+static_cast<float>(i)*.61F)*.018F;
+        const float phase=seconds*1.65F+static_cast<float>(i)*.61F;
+        const float bob=std::sin(phase*2.0F)*.012F;
         const float yaw=positions[i].yaw+std::sin(seconds*.45F+static_cast<float>(i))*.025F;
         const Mat4 model=modelAt(positions[i].x,bob,positions[i].z,yaw);
         const Mat4 mvp=multiply(vp,model);
+        const float armSwing=std::sin(phase)*.075F;
+        const float legSwing=std::sin(phase)*.045F;
+        const Mat4 bones[5]={
+            identity(),
+            rotationAroundX({-.20F,1.31F,0},armSwing),
+            rotationAroundX({.20F,1.31F,0},-armSwing),
+            rotationAroundX({-.115F,.80F,0},-legSwing),
+            rotationAroundX({.115F,.80F,0},legSwing)
+        };
+        glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,bones[0].v.data());
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,model.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
         glDrawArrays(GL_TRIANGLES,0,playerCount);
     }
-    glBindVertexArray(0); glUseProgram(0);
+    glBindVertexArray(0); glBindTexture(GL_TEXTURE_2D,0); glUseProgram(0);
 }
 
 void Renderer::setFormation(int formation) { scene_.setFormation(formation); }
@@ -203,6 +290,7 @@ void Renderer::destroy() {
     if(playerBuffer_) { glDeleteBuffers(1,&playerBuffer_); playerBuffer_=0; }
     if(playerVao_) { glDeleteVertexArrays(1,&playerVao_); playerVao_=0; }
     if(program_) { glDeleteProgram(program_); program_=0; }
+    if(materialTexture_) { glDeleteTextures(1,&materialTexture_); materialTexture_=0; }
     initialized_=false;
 }
 

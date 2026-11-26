@@ -35,6 +35,9 @@ private:
     GLint modelLocation_{-1};
     GLint cameraLocation_{-1};
     GLint lightLocation_{-1};
+    GLint bonesLocation_{-1};
+    GLint textureLocation_{-1};
+    GLuint materialTexture_{0};
     int width_{1};
     int height_{1};
     bool initialized_{false};

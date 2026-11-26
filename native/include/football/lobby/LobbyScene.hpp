@@ -9,6 +9,10 @@ struct LobbyVertex {
     float position[3];
     float normal[3];
     float color[4];
+    float uv[2];
+    float boneIndices[4];
+    float boneWeights[4];
+    float material;
 };
 
 struct LobbyPlayerPosition {

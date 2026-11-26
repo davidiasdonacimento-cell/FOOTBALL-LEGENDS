@@ -21,8 +21,24 @@ Vec3 normalized(Vec3 v) {
 using Color = std::array<float,4>;
 
 void vertex(std::vector<LobbyVertex>& out, Vec3 p, Vec3 n, Color c) {
-    LobbyVertex v{{p.x,p.y,p.z},{n.x,n.y,n.z},{c[0],c[1],c[2],c[3]}};
+    LobbyVertex v{};
+    v.position[0]=p.x; v.position[1]=p.y; v.position[2]=p.z;
+    v.normal[0]=n.x; v.normal[1]=n.y; v.normal[2]=n.z;
+    v.color[0]=c[0]; v.color[1]=c[1]; v.color[2]=c[2]; v.color[3]=c[3];
+    v.uv[0]=p.x*.075F; v.uv[1]=p.z*.075F;
+    v.boneIndices[0]=0.0F; v.boneWeights[0]=1.0F;
+    if(c[1]>c[0]*1.35F && c[1]>c[2]*1.2F) v.material=0.0F;
+    else if(c[2]>c[0]*1.25F && c[2]>c[1]*1.05F) v.material=1.0F;
+    else if(c[0]>c[1]*1.12F && c[1]>c[2]*1.05F) v.material=2.0F;
+    else if(c[0]>.72F && c[1]>.72F && c[2]>.72F) v.material=3.0F;
+    else v.material=4.0F;
     out.push_back(v);
+}
+void assignBone(std::vector<LobbyVertex>& out,std::size_t begin,std::size_t end,float bone) {
+    for(std::size_t i=begin;i<end;++i) {
+        out[i].boneIndices[0]=bone;
+        out[i].boneWeights[0]=1.0F;
+    }
 }
 void triangle(std::vector<LobbyVertex>& out, Vec3 a, Vec3 b, Vec3 c, Vec3 normal, Color color) {
     vertex(out,a,normal,color); vertex(out,b,normal,color); vertex(out,c,normal,color);
@@ -231,24 +247,34 @@ void LobbyScene::buildPlayerModel() {
     // Shirt collar, chest stripe and sleeve cuffs.
     ellipsoid(player_,{0,1.405F,-.002F},{.082F,.025F,.078F},trim,12,7);
     box(player_,{0,1.12F,-.136F},{.025F,.38F,.012F},jerseyLight);
+    const std::size_t leftArmBegin=player_.size();
     cylinder(player_,{-.20F,1.31F,0},{-.30F,1.02F,-.005F},.075F,.055F,jersey,14);
-    cylinder(player_,{.20F,1.31F,0},{.30F,1.02F,-.005F},.075F,.055F,jersey,14);
     ellipsoid(player_,{-.30F,1.02F,-.005F},{.056F,.065F,.06F},skin,12,8);
-    ellipsoid(player_,{.30F,1.02F,-.005F},{.056F,.065F,.06F},skin,12,8);
     cylinder(player_,{-.30F,1.02F,-.005F},{-.32F,.78F,-.025F},.052F,.043F,skin,12);
-    cylinder(player_,{.30F,1.02F,-.005F},{.32F,.78F,-.025F},.052F,.043F,skin,12);
     ellipsoid(player_,{-.32F,.77F,-.025F},{.047F,.055F,.05F},skin,10,7);
+    assignBone(player_,leftArmBegin,player_.size(),1.0F);
+
+    const std::size_t rightArmBegin=player_.size();
+    cylinder(player_,{.20F,1.31F,0},{.30F,1.02F,-.005F},.075F,.055F,jersey,14);
+    ellipsoid(player_,{.30F,1.02F,-.005F},{.056F,.065F,.06F},skin,12,8);
+    cylinder(player_,{.30F,1.02F,-.005F},{.32F,.78F,-.025F},.052F,.043F,skin,12);
     ellipsoid(player_,{.32F,.77F,-.025F},{.047F,.055F,.05F},skin,10,7);
-    // Thighs, knees, calves, socks and boots.
+    assignBone(player_,rightArmBegin,player_.size(),2.0F);
+
+    // Articulated upper and lower legs, socks and boots.
+    const std::size_t leftLegBegin=player_.size();
     cylinder(player_,{-.115F,.80F,0},{-.13F,.49F,-.005F},.105F,.075F,shorts,14);
-    cylinder(player_,{.115F,.80F,0},{.13F,.49F,-.005F},.105F,.075F,shorts,14);
     ellipsoid(player_,{-.13F,.47F,-.005F},{.078F,.075F,.078F},skin,12,8);
-    ellipsoid(player_,{.13F,.47F,-.005F},{.078F,.075F,.078F},skin,12,8);
     cylinder(player_,{-.13F,.45F,-.005F},{-.135F,.12F,-.015F},.066F,.052F,socks,14);
-    cylinder(player_,{.13F,.45F,-.005F},{.135F,.12F,-.015F},.066F,.052F,socks,14);
-    box(player_,{0,.28F,-.069F},{.34F,.045F,.012F},trim);
     ellipsoid(player_,{-.135F,.075F,-.075F},{.085F,.065F,.16F},boots,14,8);
+    assignBone(player_,leftLegBegin,player_.size(),3.0F);
+
+    const std::size_t rightLegBegin=player_.size();
+    cylinder(player_,{.115F,.80F,0},{.13F,.49F,-.005F},.105F,.075F,shorts,14);
+    ellipsoid(player_,{.13F,.47F,-.005F},{.078F,.075F,.078F},skin,12,8);
+    cylinder(player_,{.13F,.45F,-.005F},{.135F,.12F,-.015F},.066F,.052F,socks,14);
     ellipsoid(player_,{.135F,.075F,-.075F},{.085F,.065F,.16F},boots,14,8);
+    assignBone(player_,rightLegBegin,player_.size(),4.0F);
 }
 
 } // namespace football
