@@ -62,6 +62,7 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
     boolean playerAction(int action, int target, float x, float y) { return engineHandle != 0L && NativeBridge.nativePlayerAction(engineHandle, action, target, x, y); }
     boolean refereeSendOff(int playerId) { return engineHandle != 0L && NativeBridge.nativeRefereeSendOff(engineHandle, playerId); }
 
+    boolean refereeIssueCard(int playerId, int cardType) { return engineHandle != 0L && NativeBridge.nativeRefereeIssueCard(engineHandle, playerId, cardType); }
     void releaseNativeEngine() {
         if (engineHandle != 0L) {
             NativeBridge.nativeDestroy(engineHandle);
