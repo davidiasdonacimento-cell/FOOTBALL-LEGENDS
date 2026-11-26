@@ -274,17 +274,24 @@ void Renderer::render() {
         const float pz=matchActive_?matchPositions_[i].z:lobbyPositions[i].z;
         const float yaw=matchActive_?matchPositions_[i].yaw:lobbyPositions[i].yaw;
         const float phase=seconds*1.65F+static_cast<float>(i)*.61F;
-        const float bob=std::sin(phase*2.0F)*.012F;
+        const float pose=matchActive_?matchPositions_[i].pose:0.0F;
+        const float poseTime=matchActive_?matchPositions_[i].poseTime:0.0F;
+        const float poseBlend=std::min(1.0F,poseTime*3.5F);
+        const float bob=pose==3.0F?-.22F*poseBlend:std::sin(phase*2.0F)*.012F;
         const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
         const float protest=matchActive_?matchPositions_[i].protest:0.0F;
-        const float protestPose=protest>0.0F?0.85F:0.0F;
-        const float armSwing=std::sin(phase)*.075F + protestPose;
-        const float legSwing=std::sin(phase)*.045F;
+        const float protestPose=protest>0.0F?1.05F:0.0F;
+        const bool diving=pose==3.0F;
+        const bool catching=pose==4.0F;
+        const float armSwing=catching?1.15F:(diving?1.25F:std::sin(phase)*.075F+protestPose);
+        const float oppositeArm=catching?1.15F:(diving?-1.25F:-armSwing);
+        const float legSwing=diving?.45F:std::sin(phase)*.045F;
+        const Mat4 rootPose=diving?rotationAroundX({0,.82F,0},1.20F):identity();
         const Mat4 bones[5]={
-            identity(),
+            rootPose,
             rotationAroundX({-.20F,1.31F,0},armSwing),
-            rotationAroundX({.20F,1.31F,0},-armSwing),
+            rotationAroundX({.20F,1.31F,0},oppositeArm),
             rotationAroundX({-.115F,.80F,0},-legSwing),
             rotationAroundX({.115F,.80F,0},legSwing)
         };
@@ -336,7 +343,7 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     matchActive_=match.state()==MatchState::Running || match.state()==MatchState::Paused;
     const auto& players=match.players();
     for(std::size_t i=0;i<players.size();++i) {
-        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds};
+        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds,static_cast<float>(players[i].animation),players[i].animationSeconds};
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
     refereePosition_={match.refereePosition().y,match.refereePosition().x};
