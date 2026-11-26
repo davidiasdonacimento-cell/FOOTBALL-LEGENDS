@@ -8,9 +8,9 @@ constexpr float kPlayerSpeed = 6.2f;
 constexpr float kBallFriction = 0.985f;
 constexpr float kControlRadius = 1.65f;
 constexpr Vec2 kFormation[11] = {
-    {-48.0f,0.0f},{-37.0f,-22.0f},{-39.0f,-10.0f},{-39.0f,10.0f},{-37.0f,22.0f},
-    {-22.0f,-17.0f},{-24.0f,0.0f},{-22.0f,17.0f},
-    {-8.0f,-20.0f},{-8.0f,20.0f},{-2.0f,0.0f}
+    {-32.0f,0.0f},{-24.0f,-35.0f},{-25.0f,-12.0f},{-25.0f,12.0f},{-24.0f,35.0f},
+    {-14.0f,-20.0f},{-15.0f,0.0f},{-14.0f,20.0f},
+    {-5.0f,-30.0f},{-5.0f,30.0f},{-2.0f,0.0f}
 };
 }
 
@@ -125,14 +125,14 @@ void MatchSimulation::updateTeam(float dt, int team) {
             continue;
         }
         if (i == carrier && carrierTeam == team) {
-            target = {team == 0 ? 48.0f : -48.0f, 0.0f};
+            target = {team == 0 ? 32.0f : -32.0f, 0.0f};
         } else if (carrierTeam != team && i == chaser) {
             target = ball_.position;
         } else if (carrierTeam == team) {
             target = {p.position.x + (team == 0 ? 3.0f : -3.0f), p.position.y};
         } else {
             const float sign = team == 0 ? 1.0f : -1.0f;
-            target = {kFormation[p.role].x * sign * 0.72f, kFormation[p.role].y * 0.85f};
+            target = {kFormation[p.role].x * sign * 0.82f, kFormation[p.role].y * 0.90f};
         }
         Vec2 delta{target.x - p.position.x, target.y - p.position.y};
         Vec2 dir = normalized(delta);
