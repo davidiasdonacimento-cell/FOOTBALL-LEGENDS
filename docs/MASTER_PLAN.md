@@ -611,3 +611,22 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - O apito pausa a partida; não há ainda uma sequência visual de infração nem reinício de bola parada.
 - A IA é funcional como movimentação básica, mas ainda precisa de goleiros, tática avançada, colisões, recepção e regras completas.
 - HUD/renderer e comandos precisam ser validados em aparelho Android real. Compilação CI ainda pendente.
+
+
+# 35. GOLEIRO, ANIMAÇÕES DE JOGADA E VALIDAÇÃO DE ARBITRAGEM — 2026-11-26
+
+## Implementação na branch nativa
+- **Status:** implementado no código; aguardando CI desta revisão e teste visual em Android.
+- O seletor do modo jogador oferece o goleiro (camisa 1); ao selecioná-lo, aparecem comandos contextuais de mergulho/defesa e agarrar a bola.
+- Ações nativas do goleiro verificam a função do atleta e a distância da bola; mergulho desloca o goleiro em direção à bola e captura quando alcança o raio de defesa.
+- Estado de animação por jogador com temporizador: protesto após amarelo, reclamação/expulsão após vermelho ou segundo amarelo, mergulho e defesa com as mãos.
+- O renderer recebe o estado de animação e aplica poses esqueléticas procedurais com blend temporal; jogador expulso protesta e depois se desloca para fora do campo.
+- A linha de impedimento passa a considerar os 11 adversários ativos, incluindo o goleiro, ordenados pela progressão em relação ao gol atacado. A linha é exibida no lance detectado.
+- Cenários de teste incluem passe em impedimento, passe em posição legal, linha virtual, revisão VAR anulando decisão, defesa/agarre do goleiro e cobrança de pênalti após falta na área.
+
+## Limitações e validação
+- As animações são poses esqueléticas procedurais do modelo atual, não captura de movimento nem clipes cinematográficos completos.
+- A detecção automática de impedimento avalia o destinatário selecionado no instante do passe; ainda não analisa interferência, participação ativa, rebotes ou segundo toque.
+- O VAR atual guarda e restaura o estado da bola e a decisão da arbitragem; não há replay multiângulo nem análise automática de imagens.
+- A defesa do goleiro usa distância e movimento simplificados; ainda faltam colisão física completa, trajetória de voo e animações de queda/recuperação mais detalhadas.
+- CI e compilação APK desta revisão ainda precisam terminar; nenhum teste em aparelho foi realizado.
