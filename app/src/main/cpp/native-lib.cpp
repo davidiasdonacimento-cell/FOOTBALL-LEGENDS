@@ -64,3 +64,28 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_footballlegends_mobile_NativeBridge_nativeResetMatch(JNIEnv*, jclass, jlong handle) {
     if (auto* engine = fromHandle(handle)) engine->resetMatch();
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeSetControlRole(JNIEnv*, jclass, jlong handle, jint role) {
+    if (auto* engine = fromHandle(handle)) engine->setControlRole(role);
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeSelectPlayer(JNIEnv*, jclass, jlong handle, jint playerId) {
+    if (auto* engine = fromHandle(handle)) return engine->selectPlayer(playerId) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeMovePlayer(JNIEnv*, jclass, jlong handle, jfloat x, jfloat y) {
+    if (auto* engine = fromHandle(handle)) return engine->movePlayer(x, y) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativePlayerAction(JNIEnv*, jclass, jlong handle, jint action, jint target, jfloat x, jfloat y) {
+    if (auto* engine = fromHandle(handle)) return engine->playerAction(action, target, x, y) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereeSendOff(JNIEnv*, jclass, jlong handle, jint playerId) {
+    if (auto* engine = fromHandle(handle)) return engine->refereeSendOff(playerId) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
