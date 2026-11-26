@@ -277,7 +277,9 @@ void Renderer::render() {
         const float bob=std::sin(phase*2.0F)*.012F;
         const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
-        const float armSwing=std::sin(phase)*.075F;
+        const float protest=matchActive_?matchPositions_[i].protest:0.0F;
+        const float protestPose=protest>0.0F?0.85F:0.0F;
+        const float armSwing=std::sin(phase)*.075F + protestPose;
         const float legSwing=std::sin(phase)*.045F;
         const Mat4 bones[5]={
             identity(),
@@ -294,6 +296,27 @@ void Renderer::render() {
         glUniformMatrix4fv(modelLocation_,1,GL_FALSE,model.v.data());
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
         glDrawArrays(GL_TRIANGLES,0,playerCount);
+    }
+    if(matchActive_) {
+        const Mat4 refereeModel=modelAt(refereePosition_.x,0.0F,refereePosition_.y,0.0F);
+        const Mat4 refereeMvp=multiply(vp,refereeModel);
+        const Mat4 refereeBones[5]={identity(),rotationAroundX({-.20F,1.31F,0},.45F),rotationAroundX({.20F,1.31F,0},-.45F),identity(),identity()};
+        glUniform3f(teamTintLocation_,.12F,.15F,.20F);
+        glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,refereeBones[0].v.data());
+        glUniformMatrix4fv(modelLocation_,1,GL_FALSE,refereeModel.v.data());
+        glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,refereeMvp.v.data());
+        glBindVertexArray(playerVao_);
+        glDrawArrays(GL_TRIANGLES,0,playerCount);
+    }
+    if(matchActive_ && offsideLineVisible_ && offsideLineVao_!=0) {
+        const Mat4 lineModel=modelAt(0.0F,0.0F,offsideLine_,0.0F);
+        const Mat4 lineMvp=multiply(vp,lineModel);
+        glUniform3f(teamTintLocation_,1.0F,1.0F,1.0F);
+        glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
+        glUniformMatrix4fv(modelLocation_,1,GL_FALSE,lineModel.v.data());
+        glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,lineMvp.v.data());
+        glBindVertexArray(offsideLineVao_);
+        glDrawArrays(GL_LINES,0,2);
     }
     if(matchActive_ && ballVao_!=0) {
         const Mat4 ballModel=modelAt(matchBallPosition_.x,.24F,matchBallPosition_.y,0.0F);
@@ -313,9 +336,12 @@ void Renderer::setMatchSnapshot(const MatchSimulation& match) {
     matchActive_=match.state()==MatchState::Running || match.state()==MatchState::Paused;
     const auto& players=match.players();
     for(std::size_t i=0;i<players.size();++i) {
-        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F};
+        matchPositions_[i]={players[i].position.y,players[i].position.x,players[i].team==0?3.14159265F:0.0F,players[i].protestSeconds};
     }
     matchBallPosition_={match.ball().position.y,match.ball().position.x};
+    refereePosition_={match.refereePosition().y,match.refereePosition().x};
+    offsideLine_=match.offsideLine();
+    offsideLineVisible_=match.offsideLineVisible();
 }
 void Renderer::setCinematicCamera(bool enabled) { cinematicCamera_=enabled; }
 
@@ -325,6 +351,8 @@ void Renderer::destroy() {
     if(playerBuffer_) { glDeleteBuffers(1,&playerBuffer_); playerBuffer_=0; }
     if(playerVao_) { glDeleteVertexArrays(1,&playerVao_); playerVao_=0; }
     if(ballBuffer_) { glDeleteBuffers(1,&ballBuffer_); ballBuffer_=0; }
+    if(offsideLineBuffer_) { glDeleteBuffers(1,&offsideLineBuffer_); offsideLineBuffer_=0; }
+    if(offsideLineVao_) { glDeleteVertexArrays(1,&offsideLineVao_); offsideLineVao_=0; }
     if(ballVao_) { glDeleteVertexArrays(1,&ballVao_); ballVao_=0; }
     matchActive_=false;
     if(program_) { glDeleteProgram(program_); program_=0; }
