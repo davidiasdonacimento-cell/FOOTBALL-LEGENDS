@@ -63,6 +63,7 @@ void MatchSimulation::setSpectatorMode(bool enabled) { spectatorMode_ = enabled;
 void MatchSimulation::setControlRole(ControlRole role) {
     controlRole_ = role;
     playerInput_ = {};
+    playerSpeedMultiplier_ = 1.0f;
 }
 bool MatchSimulation::selectControlledPlayer(int playerId) {
     if (playerId < 0 || playerId >= kPlayerCount || players_[playerId].team != 0 || players_[playerId].sentOff) return false;
