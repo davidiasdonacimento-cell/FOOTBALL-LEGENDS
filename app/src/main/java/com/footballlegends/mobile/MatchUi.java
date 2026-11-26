@@ -22,6 +22,7 @@ public final class MatchUi extends FrameLayout {
     private final Context context;
     private final TextView roleLabel;
     private final LinearLayout actionPanel;
+    private LinearLayout keeperActions;
     private int role = 0;
     private int selectedPlayer = 10;
     private boolean whistlePaused = false;
@@ -82,6 +83,7 @@ public final class MatchUi extends FrameLayout {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 selectedPlayer = position;
                 surface.selectPlayer(position);
+                keeperActions.setVisibility(position == 0 ? View.VISIBLE : View.GONE);
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
         });
@@ -110,6 +112,18 @@ public final class MatchUi extends FrameLayout {
             actions.addView(b, new LinearLayout.LayoutParams(0, dp(46), 1));
         }
         actionPanel.addView(actions);
+
+        keeperActions = new LinearLayout(context);
+        keeperActions.setGravity(Gravity.CENTER);
+        keeperActions.setVisibility(View.GONE);
+        Button dive = button("GOLEIRO • MERGULHO / DEFESA");
+        dive.setOnClickListener(v -> surface.playerAction(5, -1, 1.0f, 0.0f));
+        Button catchBall = button("GOLEIRO • SEGURAR BOLA");
+        catchBall.setOnClickListener(v -> surface.playerAction(6, -1, 1.0f, 0.0f));
+        keeperActions.addView(dive, new LinearLayout.LayoutParams(0, dp(48), 1));
+        keeperActions.addView(catchBall, new LinearLayout.LayoutParams(0, dp(48), 1));
+        actionPanel.addView(keeperActions);
+        actionPanel.addView(label("Os comandos de goleiro aparecem ao selecionar o camisa 1.", 9, Color.LTGRAY, false));
     }
 
     private void addDirection(Button button, float x, float y) {
