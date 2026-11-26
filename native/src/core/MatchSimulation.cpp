@@ -209,6 +209,14 @@ bool MatchSimulation::command(int playerId, PlayerAction action, int targetPlaye
                     if (d < best) { best = d; targetPlayerId = i; }
                 }
             }
+            if (targetPlayerId < 0) {
+                float best = 1.0e9f;
+                for (int i = player.team * 11; i < player.team * 11 + 11; ++i) {
+                    if (i == playerId || players_[i].sentOff) continue;
+                    const float d = distance(players_[i].position, player.position);
+                    if (d < best) { best = d; targetPlayerId = i; }
+                }
+            }
             if (targetPlayerId < 0 || targetPlayerId >= kPlayerCount || players_[targetPlayerId].team != player.team || players_[targetPlayerId].sentOff) return false;
             ball_.owner = -1;
             ball_.lastTouchTeam = player.team;
