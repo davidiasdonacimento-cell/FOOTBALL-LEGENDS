@@ -217,6 +217,13 @@ void Renderer::uploadScene() {
     glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(player.size()*sizeof(LobbyVertex)),
                  player.data(),GL_STATIC_DRAW);
     configureVertexLayout(); glBindVertexArray(0);
+
+    const auto& ball=scene_.ballVertices();
+    glGenVertexArrays(1,&ballVao_); glGenBuffers(1,&ballBuffer_);
+    glBindVertexArray(ballVao_); glBindBuffer(GL_ARRAY_BUFFER,ballBuffer_);
+    glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(ball.size()*sizeof(LobbyVertex)),
+                 ball.data(),GL_STATIC_DRAW);
+    configureVertexLayout(); glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER,0);
 }
 
@@ -256,13 +263,16 @@ void Renderer::render() {
     glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(scene_.environmentVertices().size()));
 
     glBindVertexArray(playerVao_);
-    const auto& positions=scene_.playerPositions();
+    const auto& lobbyPositions=scene_.playerPositions();
+    const std::size_t count=matchActive_?MatchSimulation::kPlayerCount:lobbyPositions.size();
     const GLsizei playerCount=static_cast<GLsizei>(scene_.playerVertices().size());
-    for(std::size_t i=0;i<positions.size();++i) {
+    for(std::size_t i=0;i<count;++i) {
+        const float px=matchActive_?matchPositions_[i].x:lobbyPositions[i].x;
+        const float pz=matchActive_?matchPositions_[i].z:lobbyPositions[i].z;
+        const float yaw=matchActive_?matchPositions_[i].yaw:lobbyPositions[i].yaw;
         const float phase=seconds*1.65F+static_cast<float>(i)*.61F;
         const float bob=std::sin(phase*2.0F)*.012F;
-        const float yaw=positions[i].yaw+std::sin(seconds*.45F+static_cast<float>(i))*.025F;
-        const Mat4 model=modelAt(positions[i].x,bob,positions[i].z,yaw);
+        const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
         const float armSwing=std::sin(phase)*.075F;
         const float legSwing=std::sin(phase)*.045F;
@@ -278,10 +288,27 @@ void Renderer::render() {
         glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,mvp.v.data());
         glDrawArrays(GL_TRIANGLES,0,playerCount);
     }
+    if(matchActive_ && ballVao_!=0) {
+        const Mat4 ballModel=modelAt(matchBallPosition_.x,.24F,matchBallPosition_.y,0.0F);
+        const Mat4 ballMvp=multiply(vp,ballModel);
+        glUniformMatrix4fv(bonesLocation_,5,GL_FALSE,rootBones[0].v.data());
+        glUniformMatrix4fv(modelLocation_,1,GL_FALSE,ballModel.v.data());
+        glUniformMatrix4fv(mvpLocation_,1,GL_FALSE,ballMvp.v.data());
+        glBindVertexArray(ballVao_);
+        glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(scene_.ballVertices().size()));
+    }
     glBindVertexArray(0); glBindTexture(GL_TEXTURE_2D,0); glUseProgram(0);
 }
 
 void Renderer::setFormation(int formation) { scene_.setFormation(formation); }
+void Renderer::setMatchSnapshot(const MatchSimulation& match) {
+    matchActive_=match.state()==MatchState::Running || match.state()==MatchState::Paused;
+    const auto& players=match.players();
+    for(std::size_t i=0;i<players.size();++i) {
+        matchPositions_[i]={players[i].position.x,players[i].position.y,players[i].team==0?0.0F:3.14159265F};
+    }
+    matchBallPosition_=match.ball().position;
+}
 void Renderer::setCinematicCamera(bool enabled) { cinematicCamera_=enabled; }
 
 void Renderer::destroy() {
@@ -289,6 +316,9 @@ void Renderer::destroy() {
     if(environmentVao_) { glDeleteVertexArrays(1,&environmentVao_); environmentVao_=0; }
     if(playerBuffer_) { glDeleteBuffers(1,&playerBuffer_); playerBuffer_=0; }
     if(playerVao_) { glDeleteVertexArrays(1,&playerVao_); playerVao_=0; }
+    if(ballBuffer_) { glDeleteBuffers(1,&ballBuffer_); ballBuffer_=0; }
+    if(ballVao_) { glDeleteVertexArrays(1,&ballVao_); ballVao_=0; }
+    matchActive_=false;
     if(program_) { glDeleteProgram(program_); program_=0; }
     if(materialTexture_) { glDeleteTextures(1,&materialTexture_); materialTexture_=0; }
     initialized_=false;
