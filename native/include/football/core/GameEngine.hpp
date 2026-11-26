@@ -29,6 +29,12 @@ public:
     bool playerAction(int action, int targetPlayerId, float x, float y);
     bool refereeSendOff(int playerId);
     bool refereeIssueCard(int playerId, int cardType);
+    bool refereeCallFoul(int playerId);
+    bool refereeCallOffside(int playerId);
+    bool refereeRequestVar();
+    bool refereeResolveVar(bool uphold);
+    bool refereeRestartPlay();
+    void setMatchTimeScale(float scale);
     const MatchSimulation& match() const { return match_; }
 
 private:
