@@ -40,5 +40,6 @@ public final class GameSurface extends GLSurfaceView {
     public void playerAction(int action, int target, float x, float y) { queueEvent(() -> gameRenderer.playerAction(action, target, x, y)); }
     public void refereeSendOff(int playerId) { queueEvent(() -> gameRenderer.refereeSendOff(playerId)); }
 
+    public void refereeIssueCard(int playerId, int cardType) { queueEvent(() -> gameRenderer.refereeIssueCard(playerId, cardType)); }
     public void release() { queueEvent(gameRenderer::releaseNativeEngine); }
 }
