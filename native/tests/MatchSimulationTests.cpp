@@ -30,6 +30,14 @@ int main() {
     assert(passMatch.ball().owner == -1);
     assert(passMatch.ball().velocity.x > 0.0f);
 
+    football::MatchSimulation crossMatch;
+    crossMatch.start();
+    football::MatchSimulationTestAccess::setBall(crossMatch, {12.0f, -30.0f}, 10);
+    assert(crossMatch.command(10, football::PlayerAction::Cross, 8, 0.8f, 0.6f));
+    assert(crossMatch.ball().owner == -1);
+    assert(crossMatch.ball().height > 0.0f);
+    assert(crossMatch.ball().verticalVelocity > 0.0f);
+
     football::MatchSimulation keeperMatch;
     keeperMatch.start();
     assert(keeperMatch.selectControlledPlayer(0));

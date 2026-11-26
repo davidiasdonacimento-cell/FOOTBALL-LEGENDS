@@ -73,6 +73,29 @@ int main() {
     football::AIBallDecisionContext dribbleDecision{1, 9, {-5.0f, 2.0f}, -1, 0.0f, 0.0f, 8.0f, false,
                                                       football::TacticalStyle::CounterAttack};
     assert(football::TeamAI::decideBallAction(dribbleDecision) == football::AIBallAction::Dribble);
+    football::AIBallDecisionContext crossDecision{0, 9, {15.0f, -30.0f}, 8, 10.0f, 6.0f, 5.0f, false,
+                                                    football::TacticalStyle::Balanced, true, true,
+                                                    football::AIDifficulty::Normal};
+    assert(football::TeamAI::decideBallAction(crossDecision) == football::AIBallAction::Cross);
+    football::AIBallDecisionContext easyShot = shotDecision;
+    easyShot.difficulty = football::AIDifficulty::Easy;
+    assert(football::TeamAI::decideBallAction(easyShot) != football::AIBallAction::Shoot);
+    football::AIBallDecisionContext hardShot = shotDecision;
+    hardShot.difficulty = football::AIDifficulty::Hard;
+    assert(football::TeamAI::decideBallAction(hardShot) == football::AIBallAction::Shoot);
+
+    TeamAIContext marking = highPress;
+    marking.team = 0; marking.playerId = 2; marking.role = 2;
+    marking.possessionTeam = 1; marking.chaserId = -1;
+    marking.playerPosition = {-24.0f, -12.0f};
+    marking.hasMarkingTarget = true; marking.markingTarget = {8.0f, -10.0f};
+    const Vec2 markTarget = TeamAI::targetForPlayer(marking);
+    assert(markTarget.x > -5.0f);
+    assert(markTarget.y < 0.0f);
+    marking.hasCoverTarget = true; marking.coverTarget = {0.0f, 4.0f};
+    const Vec2 coverTarget = TeamAI::targetForPlayer(marking);
+    assert(coverTarget.y > markTarget.y);
+
     football::AIBallDecisionContext invalidDecision{-1, 20, {}, -1, 0.0f, 0.0f, 0.0f, false,
                                                       football::TacticalStyle::Balanced};
     assert(football::TeamAI::decideBallAction(invalidDecision) == football::AIBallAction::Pass);
@@ -84,7 +107,12 @@ int main() {
     assert(match.tacticalStyle(0) == TacticalStyle::HighPress);
     assert(!match.setTacticalStyle(2, TacticalStyle::Balanced));
     assert(match.setTacticalStyle(1, TacticalStyle::DefensiveBlock));
+    assert(match.aiDifficulty() == AIDifficulty::Normal);
+    assert(match.setAIDifficulty(AIDifficulty::Hard));
+    assert(match.aiDifficulty() == AIDifficulty::Hard);
+    assert(!match.setAIDifficulty(static_cast<AIDifficulty>(99)));
     match.reset();
+    assert(match.aiDifficulty() == AIDifficulty::Normal);
     assert(match.tacticalStyle(0) == TacticalStyle::Balanced);
     assert(match.tacticalStyle(1) == TacticalStyle::Balanced);
     return 0;

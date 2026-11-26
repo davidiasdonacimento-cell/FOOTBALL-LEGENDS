@@ -6,8 +6,9 @@ namespace football {
 
 struct Vec2 { float x{0.0f}; float y{0.0f}; };
 enum class TacticalStyle : std::uint8_t { Balanced, Possession, CounterAttack, HighPress, DefensiveBlock };
+enum class AIDifficulty : std::uint8_t { Easy, Normal, Hard };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
-enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
+enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch, Cross };
 enum class ControlRole : std::uint8_t { Player, Referee };
 enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal, ThrowIn, Corner, GoalKick, Advantage };
 enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch, KeeperFall, KeeperRecover, KeeperHighCatch };
@@ -71,6 +72,8 @@ public:
     void setSpectatorMode(bool enabled);
     bool setTacticalStyle(int team, TacticalStyle style);
     TacticalStyle tacticalStyle(int team) const;
+    bool setAIDifficulty(AIDifficulty difficulty);
+    AIDifficulty aiDifficulty() const { return aiDifficulty_; }
     void setControlRole(ControlRole role);
     ControlRole controlRole() const { return controlRole_; }
     bool selectControlledPlayer(int playerId);
@@ -110,6 +113,7 @@ private:
     int scores_[2]{0, 0};
     bool spectatorMode_{false};
     TacticalStyle tacticalStyles_[2]{TacticalStyle::Balanced, TacticalStyle::Balanced};
+    AIDifficulty aiDifficulty_{AIDifficulty::Normal};
     std::array<float, kPlayerCount> aiDecisionCooldown_{};
     std::array<bool, kPlayerCount> aiCarryIntent_{};
     ControlRole controlRole_{ControlRole::Player};

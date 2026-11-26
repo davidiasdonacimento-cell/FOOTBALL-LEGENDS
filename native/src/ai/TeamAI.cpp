@@ -68,6 +68,27 @@ Vec2 TeamAI::targetForPlayer(const TeamAIContext& c) {
         targetProgress = clamp(targetProgress, -25.0f, 32.0f);
         const float width = c.style == TacticalStyle::Possession ? 1.15f : 0.92f;
         targetY = home.y * width + c.ballPosition.y * (inPossession ? 0.08f : 0.04f);
+        if (inPossession && c.role == 10) {
+            targetProgress += 2.0f;
+            targetY = clamp(c.ballPosition.y * 0.18f, -7.0f, 7.0f);
+        } else if (inPossession && (c.role == 8 || c.role == 9)) {
+            const float flank = c.role == 8 ? -1.0f : 1.0f;
+            if (c.ballPosition.y * flank < -8.0f) {
+                targetY = flank * 9.0f;
+                targetProgress += 2.5f;
+            } else {
+                targetY = flank * 27.0f + c.ballPosition.y * 0.08f;
+            }
+        }
+    }
+
+    if (!inPossession && c.hasMarkingTarget && c.role >= 1 && c.role <= 7) {
+        targetProgress = targetProgress * 0.34f + c.markingTarget.x * direction * 0.66f;
+        targetY = targetY * 0.34f + c.markingTarget.y * 0.66f;
+    }
+    if (!inPossession && c.hasCoverTarget && (c.role == 2 || c.role == 3)) {
+        targetProgress = targetProgress * 0.72f + c.coverTarget.x * direction * 0.28f;
+        targetY = targetY * 0.72f + c.coverTarget.y * 0.28f;
     }
 
     return {clamp(targetProgress * direction, -35.0f, 35.0f),
@@ -93,12 +114,21 @@ AIBallAction TeamAI::decideBallAction(const AIBallDecisionContext& c) {
     const float progress = c.playerPosition.x * direction;
     const float goalDistance = 36.0f - progress;
     const float lateralDistance = std::fabs(c.playerPosition.y);
-    const bool shootingRange = goalDistance <= 18.0f && lateralDistance <= 19.0f;
+    const float shootingLimit = c.difficulty == AIDifficulty::Hard ? 22.0f :
+                                c.difficulty == AIDifficulty::Easy ? 14.0f : 18.0f;
+    const float shotSeparation = c.difficulty == AIDifficulty::Hard ? 1.2f :
+                                 c.difficulty == AIDifficulty::Easy ? 3.0f : 1.8f;
+    if (c.wideChannel && c.teammateInBox && goalDistance <= 30.0f &&
+        goalDistance >= 7.0f && c.nearestOpponentDistance >= shotSeparation)
+        return AIBallAction::Cross;
+    const bool shootingRange = goalDistance <= shootingLimit && lateralDistance <= 19.0f;
     const bool shotWindow = !c.forwardLaneBlocked || goalDistance <= 11.0f;
-    if (shootingRange && shotWindow && c.nearestOpponentDistance >= 1.8f)
+    if (shootingRange && shotWindow && c.nearestOpponentDistance >= shotSeparation)
         return AIBallAction::Shoot;
+    const float minimumProgress = c.difficulty == AIDifficulty::Hard ? 1.0f :
+                                  c.difficulty == AIDifficulty::Easy ? 4.0f : 2.0f;
     const bool forwardOption = c.bestTeammateId >= 0 &&
-        c.bestTeammateProgress >= 2.0f && c.bestTeammatePressure >= 2.0f;
+        c.bestTeammateProgress >= minimumProgress && c.bestTeammatePressure >= 2.0f;
     const bool underPressure = c.nearestOpponentDistance < 5.0f;
     if (forwardOption && (underPressure || c.forwardLaneBlocked ||
                           goalDistance > 21.0f ||

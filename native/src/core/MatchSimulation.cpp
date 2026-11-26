@@ -51,6 +51,7 @@ void MatchSimulation::reset() {
     scores_[0] = scores_[1] = 0;
     spectatorMode_ = false;
     tacticalStyles_[0] = tacticalStyles_[1] = TacticalStyle::Balanced;
+    aiDifficulty_ = AIDifficulty::Normal;
     aiDecisionCooldown_.fill(0.0f);
     aiCarryIntent_.fill(false);
     controlRole_ = ControlRole::Player;
@@ -107,6 +108,12 @@ bool MatchSimulation::setTacticalStyle(int team, TacticalStyle style) {
 TacticalStyle MatchSimulation::tacticalStyle(int team) const {
     return team >= 0 && team < 2 ? tacticalStyles_[team] : TacticalStyle::Balanced;
 }
+bool MatchSimulation::setAIDifficulty(AIDifficulty difficulty) {
+    if (static_cast<unsigned int>(difficulty) > static_cast<unsigned int>(AIDifficulty::Hard)) return false;
+    aiDifficulty_ = difficulty;
+    aiDecisionCooldown_.fill(0.0f);
+    return true;
+}
 void MatchSimulation::setControlRole(ControlRole role) {
     controlRole_ = role;
     playerInput_ = {};
@@ -162,6 +169,8 @@ void MatchSimulation::updateTeam(float dt, int team) {
     const int carrier = ball_.owner;
     const int carrierTeam = carrier >= 0 ? players_[carrier].team : -1;
     const int chaser = nearestPlayer(team, ball_.position);
+    const bool defending = carrierTeam >= 0 && carrierTeam != team;
+    const float attackDirection = team == 0 ? 1.0f : -1.0f;
     for (int i = team * 11; i < team * 11 + 11; ++i) {
         Player& p = players_[i];
         if (p.protestSeconds > 0.0f) p.protestSeconds = std::max(0.0f, p.protestSeconds - dt);
@@ -219,12 +228,36 @@ void MatchSimulation::updateTeam(float dt, int team) {
             p.stamina = std::max(0.0f, p.stamina - dt * 0.0010f);
             continue;
         }
+        bool hasMarkingTarget = false;
+        Vec2 markingTarget{};
+        bool hasCoverTarget = false;
+        Vec2 coverTarget{};
+        if (defending && p.role >= 1 && p.role <= 7) {
+            int markedRole = p.role <= 3 ? p.role + 7 : p.role;
+            if (p.role == 4) markedRole = 10;
+            const Player& marked = players_[(1 - team) * kPlayersPerTeam + markedRole];
+            if (!marked.sentOff) {
+                markingTarget = {marked.position.x - attackDirection * 2.0f,
+                                 marked.position.y * 0.86f + ball_.position.y * 0.14f};
+                hasMarkingTarget = true;
+            }
+            if (p.role == 2 || p.role == 3) {
+                coverTarget = {ball_.position.x - attackDirection * 4.5f,
+                               ball_.position.y * 0.38f + p.position.y * 0.62f};
+                hasCoverTarget = true;
+            }
+        }
         const TeamAIContext aiContext{team, i, p.role, p.position, ball_.position,
-                                      carrierTeam, chaser, p.stamina, tacticalStyles_[team]};
+                                      carrierTeam, chaser, p.stamina, tacticalStyles_[team],
+                                      hasMarkingTarget, markingTarget, hasCoverTarget, coverTarget,
+                                      aiDifficulty_};
         const Vec2 target = TeamAI::targetForPlayer(aiContext);
         Vec2 delta{target.x - p.position.x, target.y - p.position.y};
         Vec2 dir = normalized(delta);
-        const float speed = kPlayerSpeed * TeamAI::movementSpeedMultiplier(aiContext) * (p.stamina < 0.15f ? 0.72f : 1.0f);
+        const float difficultySpeed = aiDifficulty_ == AIDifficulty::Hard ? 1.08f :
+                                      aiDifficulty_ == AIDifficulty::Easy ? 0.90f : 1.0f;
+        const float speed = kPlayerSpeed * TeamAI::movementSpeedMultiplier(aiContext) *
+                            difficultySpeed * (p.stamina < 0.15f ? 0.72f : 1.0f);
         p.velocity = {dir.x * speed, dir.y * speed};
         p.position.x += p.velocity.x * dt;
         p.position.y += p.velocity.y * dt;
@@ -288,14 +321,39 @@ void MatchSimulation::updateAutonomousDecision(float dt) {
             bestProgress = progress; bestPressure = pressure;
         }
     }
+    bool teammateInBox = false;
+    int boxTeammate = -1;
+    float boxScore = -1.0e9f;
+    for (int i = team * kPlayersPerTeam; i < (team + 1) * kPlayersPerTeam; ++i) {
+        if (i == carrierId || players_[i].sentOff) continue;
+        const Player& teammate = players_[i];
+        const float progress = teammate.position.x * attackDirection;
+        if (progress < 18.0f || std::fabs(teammate.position.y) > 20.0f) continue;
+        float pressure = 1000.0f;
+        for (int j = opponentStart; j < opponentStart + kPlayersPerTeam; ++j)
+            if (!players_[j].sentOff)
+                pressure = std::min(pressure, distance(teammate.position, players_[j].position));
+        const float score = progress * 0.45f + std::min(pressure, 8.0f) * 0.6f -
+                            distance(carrier.position, teammate.position) * 0.08f;
+        if (score > boxScore) { boxScore = score; boxTeammate = i; }
+    }
+    teammateInBox = boxTeammate >= 0;
+    const bool wideChannel = std::fabs(carrier.position.y) >= 24.0f;
     const AIBallDecisionContext context{team, carrier.role, carrier.position,
         bestTeammate, bestProgress, bestPressure, nearestOpponent, laneBlocked,
-        tacticalStyles_[team]};
+        tacticalStyles_[team], wideChannel, teammateInBox, aiDifficulty_};
     const AIBallAction decision = TeamAI::decideBallAction(context);
-    aiDecisionCooldown_[carrierId] = 0.62f;
+    aiDecisionCooldown_[carrierId] = aiDifficulty_ == AIDifficulty::Hard ? 0.42f :
+                                    aiDifficulty_ == AIDifficulty::Easy ? 0.95f : 0.62f;
     if (decision == AIBallAction::Shoot) {
         aiCarryIntent_[carrierId] = false;
         executeCommand(carrierId, PlayerAction::Shoot, -1, toGoal.x, toGoal.y, true);
+    } else if (decision == AIBallAction::Cross && boxTeammate >= 0) {
+        aiCarryIntent_[carrierId] = false;
+        const Vec2 crossDirection{players_[boxTeammate].position.x - carrier.position.x,
+                                  players_[boxTeammate].position.y - carrier.position.y};
+        executeCommand(carrierId, PlayerAction::Cross, boxTeammate,
+                       crossDirection.x, crossDirection.y, true);
     } else if (decision == AIBallAction::Pass && bestTeammate >= 0) {
         aiCarryIntent_[carrierId] = false;
         const Vec2 passDirection{players_[bestTeammate].position.x - carrier.position.x,
@@ -534,6 +592,16 @@ bool MatchSimulation::executeCommand(int playerId, PlayerAction action, int targ
             ball_.position = player.position;
             ball_.velocity = {direction.x * 17.0f, direction.y * 17.0f};
             ball_.height = 0.25f; ball_.verticalVelocity = 1.0f;
+            return true;
+        case PlayerAction::Cross:
+            if (ball_.owner != playerId || targetPlayerId < 0 || targetPlayerId >= kPlayerCount ||
+                players_[targetPlayerId].team != player.team || players_[targetPlayerId].sentOff) return false;
+            ball_.owner = -1;
+            ball_.lastTouchTeam = player.team;
+            ball_.position = player.position;
+            ball_.velocity = {direction.x * 16.0f, direction.y * 16.0f};
+            ball_.height = 0.55f;
+            ball_.verticalVelocity = 6.8f;
             return true;
         case PlayerAction::Shoot:
             if (ball_.owner != playerId) return false;

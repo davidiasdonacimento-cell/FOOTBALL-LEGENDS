@@ -13,9 +13,14 @@ struct TeamAIContext {
     int chaserId{-1};
     float stamina{1.0f};
     TacticalStyle style{TacticalStyle::Balanced};
+    bool hasMarkingTarget{false};
+    Vec2 markingTarget{};
+    bool hasCoverTarget{false};
+    Vec2 coverTarget{};
+    AIDifficulty difficulty{AIDifficulty::Normal};
 };
 
-enum class AIBallAction : std::uint8_t { Pass, Shoot, Dribble };
+enum class AIBallAction : std::uint8_t { Pass, Shoot, Dribble, Cross };
 
 struct AIBallDecisionContext {
     int team{0};
@@ -27,6 +32,9 @@ struct AIBallDecisionContext {
     float nearestOpponentDistance{1000.0f};
     bool forwardLaneBlocked{false};
     TacticalStyle style{TacticalStyle::Balanced};
+    bool wideChannel{false};
+    bool teammateInBox{false};
+    AIDifficulty difficulty{AIDifficulty::Normal};
 };
 
 class TeamAI final {

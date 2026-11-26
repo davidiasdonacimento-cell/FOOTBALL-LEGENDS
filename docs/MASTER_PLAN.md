@@ -780,7 +780,7 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 # 43. FASE 6 — DECISÕES AUTÔNOMAS DO PORTADOR DA BOLA — 2026-11-26
 
 ## Implementação
-- **Status:** IMPLEMENTADO NO CÓDIGO; primeira execução falhou no teste de IA porque o teste tentou usar um helper privado declarado apenas no arquivo de testes do motor. O teste de módulo foi isolado para validar a política de decisão sem acessar esse helper; integração ponta a ponta permanece pendente de teste.
+- **Status:** TESTADO em CI na execução `45827984805`; testes de partida, IA, estádio, compilação Android Debug e envio do artefato passaram. A integração ponta a ponta das decisões autônomas continua em evolução.
 - TeamAI agora decide entre passe, chute e condução por uma função determinística e separada do motor de partida.
 - A decisão considera distância e corredor até o gol, pressão adversária, companheiro em progressão e estilo tático.
 - A IA procura companheiros em posição adiantada e avalia a pressão próxima do receptor.
@@ -795,3 +795,24 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - A avaliação de linha de passe e pressão é geométrica e simplificada.
 - Desmarcação coordenada, cobertura, marcação por zona/homem e decisão dos jogadores sem bola ainda precisam evoluir.
 - Testes nativos não comprovam equilíbrio ou desempenho visual em Android físico.
+
+
+# 44. FASE 6 — MARCAÇÃO, COBERTURA, DESMARCAÇÃO, CRUZAMENTOS E DIFICULDADE — 2026-11-26
+
+## Implementação preparada nesta revisão
+- **Status:** código implementado na branch; aguardando execução única do CI.
+- A IA defensiva passa a atribuir referências de marcação por função: defensores acompanham os atacantes correspondentes e meio-campistas acompanham os setores centrais equivalentes.
+- O alvo de marcação é calculado no lado do gol, com ajuste lateral em direção à bola; os zagueiros centrais recebem um alvo secundário de cobertura para reduzir espaços entre a linha e a zona da bola.
+- A movimentação ofensiva sem bola foi diferenciada: o centroavante ataca o corredor central, e os pontas atacam a área em diagonal quando a bola está no lado oposto, mantendo largura quando a jogada está no seu setor.
+- Foi adicionada decisão de cruzamento para portadores em faixa lateral quando existe companheiro ativo dentro da área; a ação gera trajetória aérea e direcionamento ao alvo.
+- O motor agora possui dificuldade Easy, Normal e Hard, que altera velocidade de deslocamento, frequência de decisão, tolerância de finalização e agressividade para escolher opções de passe.
+- A dificuldade padrão é Normal e volta a esse valor ao reiniciar a partida.
+- Testes nativos cobrem marcação, cobertura, desmarcação, decisão de cruzamento, trajetória aérea do cruzamento, limites de dificuldade e diferenças entre níveis.
+
+## Limitações explícitas
+- A atribuição de marcação usa correspondência por função, não um algoritmo global de atribuição ótima nem troca dinâmica por bloqueios e ultrapassagens.
+- A cobertura é uma aproximação posicional; ainda não há comunicação multi-jogador, compensação de lateral ou linha defensiva com armadilha coordenada.
+- A desmarcação usa alvos geométricos por setor; ainda não lê linguagem corporal, timing do passe ou bloqueios de companheiros.
+- Cruzamentos são bolas aéreas simplificadas; ainda faltam cabeceios, disputa aérea, voleios, primeiro toque e animação específica de cruzamento.
+- Os níveis de dificuldade estão expostos no núcleo C++, mas ainda precisam de seletor no menu Android e de ajuste por atributos individuais.
+- Testes de CI não substituem avaliação visual, equilíbrio e desempenho em Android físico.
