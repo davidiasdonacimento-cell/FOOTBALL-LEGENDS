@@ -3,6 +3,7 @@ package com.footballlegends.mobile;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.view.View;
 import android.widget.FrameLayout;
 
 /** Android entry point for the native 3D club lobby. */
@@ -18,8 +19,13 @@ public final class MainActivity extends Activity {
         root.addView(gameSurface, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
-        LobbyUi lobbyUi = new LobbyUi(this, gameSurface);
+        MatchUi matchUi = new MatchUi(this, gameSurface);
+        matchUi.setVisibility(View.GONE);
+        LobbyUi lobbyUi = new LobbyUi(this, gameSurface, matchUi);
         root.addView(lobbyUi, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        root.addView(matchUi, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
         setContentView(root);
