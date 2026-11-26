@@ -28,5 +28,10 @@ public final class GameSurface extends GLSurfaceView {
         queueEvent(() -> gameRenderer.setCinematicCamera(enabled));
     }
 
+    public void startMatch() { queueEvent(gameRenderer::startMatch); }
+    public void pauseMatch() { queueEvent(gameRenderer::pauseMatch); }
+    public void resumeMatch() { queueEvent(gameRenderer::resumeMatch); }
+    public void resetMatch() { queueEvent(gameRenderer::resetMatch); }
+
     public void release() { queueEvent(gameRenderer::releaseNativeEngine); }
 }
