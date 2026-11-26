@@ -31,8 +31,8 @@ class MatchSimulation final {
 public:
     static constexpr int kPlayersPerTeam = 11;
     static constexpr int kPlayerCount = 22;
-    static constexpr float kPitchHalfLength = 55.0f;
-    static constexpr float kPitchHalfWidth = 36.0f;
+    static constexpr float kPitchHalfLength = 36.0f;
+    static constexpr float kPitchHalfWidth = 55.0f;
 
     MatchSimulation();
     void start();
