@@ -650,3 +650,26 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - IA ainda não prevê trajetórias complexas nem escolhe entre espalmar, socar e encaixar por atributos.
 - Validação visual em Android permanece pendente; CI não substitui teste físico.
 - A FASE 3 permanece **EM DESENVOLVIMENTO** até inspeção visual e testes no dispositivo.
+
+
+# 37. FASE 3 — EVOLUÇÃO DO CAMPO E CÂMERA DE PARTIDA — 2026-11-26
+
+## Alterações em andamento na branch nativa
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando CI e validação visual no Android.
+- A câmera de partida deixa de permanecer fixa no centro do estádio: acompanha o atleta controlado e a posição da bola, com enquadramento mais fechado que o lobby.
+- No modo árbitro, o enquadramento acompanha a região da bola.
+- O campo recebeu arcos de pênalti com geometria própria, complementando as marcações da área.
+- As redes das duas balizas receberam subdivisões geométricas para melhorar a leitura visual da profundidade.
+- O estádio, o gramado procedural, os modelos de atletas, a bola e o renderizador existentes foram preservados; as alterações evoluem os módulos atuais, sem duplicar a cena.
+
+## Correção da validação do goleiro
+- A execução do workflow 45732495301 revelou uma expectativa antiga no teste: ele exigia captura instantânea no comando de mergulho, embora a nova implementação faça o goleiro se deslocar antes da defesa.
+- O teste foi ajustado para verificar primeiro o estado de mergulho, avançar a simulação e então confirmar a captura após o deslocamento.
+- A correção ainda precisa ser confirmada por uma nova execução do CI.
+
+## Pendências obrigatórias antes de aprovar a Fase 3
+- Confirmar que os testes nativos passam e que o APK Debug compila.
+- Verificar a câmera em diferentes proporções de tela e confirmar que não corta o lance.
+- Testar a cena no Android físico: qualidade do gramado, linhas, balizas, redes, escala dos jogadores, bola e fluidez.
+- Evoluir colisões de bola com postes/travessão/rede e revisar o enquadramento de replay.
+- Não declarar a fase concluída apenas com aprovação do CI: é necessário teste visual real no aparelho.
