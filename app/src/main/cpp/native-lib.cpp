@@ -48,3 +48,19 @@ Java_com_footballlegends_mobile_NativeBridge_nativeDestroy(JNIEnv*,jclass,jlong 
     delete fromHandle(handle);
     __android_log_print(ANDROID_LOG_INFO,kLogTag,"Native game engine destroyed.");
 }
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeStartMatch(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) engine->startMatch();
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativePauseMatch(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) engine->pauseMatch();
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeResumeMatch(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) engine->resumeMatch();
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeResetMatch(JNIEnv*, jclass, jlong handle) {
+    if (auto* engine = fromHandle(handle)) engine->resetMatch();
+}
