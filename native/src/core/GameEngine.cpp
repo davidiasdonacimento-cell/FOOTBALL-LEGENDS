@@ -35,5 +35,11 @@ bool GameEngine::refereeSendOff(int playerId) {
     return match_.setPlayerSentOff(playerId, true);
 }
 bool GameEngine::refereeIssueCard(int playerId, int cardType) { return match_.issueCard(playerId, cardType); }
+bool GameEngine::refereeCallFoul(int playerId) { return match_.callFoul(playerId); }
+bool GameEngine::refereeCallOffside(int playerId) { return match_.callOffside(playerId); }
+bool GameEngine::refereeRequestVar() { return match_.requestVarReview(); }
+bool GameEngine::refereeResolveVar(bool uphold) { return match_.resolveVar(uphold); }
+bool GameEngine::refereeRestartPlay() { return match_.restartPlay(); }
+void GameEngine::setMatchTimeScale(float scale) { match_.setTimeScale(scale); }
 
 } // namespace football
