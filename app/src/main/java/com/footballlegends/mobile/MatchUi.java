@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 /** Touch HUD for direct player control and referee decisions. */
@@ -66,13 +67,15 @@ public final class MatchUi extends FrameLayout {
         roleLabel.setText(role == 0 ? "PARTIDA • MODO JOGADOR" : "PARTIDA • MODO ÁRBITRO");
         actionPanel.removeAllViews();
         if (role == 0) buildPlayerControls(); else buildRefereeControls();
+        buildTimeControls();
     }
 
     private void buildPlayerControls() {
         actionPanel.addView(label("ESCOLHA O JOGADOR QUE VOCÊ VAI CONTROLAR", 11, Color.WHITE, true));
         Spinner squad = new Spinner(context);
         String[] squadOptions = new String[11];
-        for (int i = 0; i < squadOptions.length; i++) squadOptions[i] = "AZUL • CAMISA " + (i + 1);
+        squadOptions[0] = "GOLEIRO • CAMISA 1";
+        for (int i = 1; i < squadOptions.length; i++) squadOptions[i] = "JOGADOR • CAMISA " + (i + 1);
         squad.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, squadOptions));
         squad.setSelection(10);
         squad.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -150,19 +153,65 @@ public final class MatchUi extends FrameLayout {
         cards.addView(yellow, new LinearLayout.LayoutParams(0, dp(48), 1));
         cards.addView(red, new LinearLayout.LayoutParams(0, dp(48), 1));
         actionPanel.addView(cards);
-        actionPanel.addView(label("Cartão amarelo acumula; o segundo resulta em expulsão. Cartão vermelho expulsa imediatamente.", 10, Color.LTGRAY, false));
+
+        LinearLayout decisions = new LinearLayout(context);
+        Button foul = button("MARCAR FALTA");
+        foul.setOnClickListener(v -> surface.refereeCallFoul(selectedPlayer));
+        Button offside = button("IMPEDIMENTO");
+        offside.setOnClickListener(v -> surface.refereeCallOffside(selectedPlayer));
+        Button var = button("REVISAR VAR");
+        var.setOnClickListener(v -> surface.refereeRequestVar());
+        decisions.addView(foul, new LinearLayout.LayoutParams(0, dp(46), 1));
+        decisions.addView(offside, new LinearLayout.LayoutParams(0, dp(46), 1));
+        decisions.addView(var, new LinearLayout.LayoutParams(0, dp(46), 1));
+        actionPanel.addView(decisions);
+
+        LinearLayout varDecisions = new LinearLayout(context);
+        Button uphold = button("VAR: MANTER");
+        uphold.setOnClickListener(v -> surface.refereeResolveVar(true));
+        Button overturn = button("VAR: ANULAR");
+        overturn.setOnClickListener(v -> surface.refereeResolveVar(false));
+        Button restart = button("COBRAR / RETOMAR");
+        restart.setOnClickListener(v -> surface.refereeRestartPlay());
+        varDecisions.addView(uphold, new LinearLayout.LayoutParams(0, dp(44), 1));
+        varDecisions.addView(overturn, new LinearLayout.LayoutParams(0, dp(44), 1));
+        varDecisions.addView(restart, new LinearLayout.LayoutParams(0, dp(44), 1));
+        actionPanel.addView(varDecisions);
+        Button resume = button("RETOMAR PARTIDA");
+        resume.setOnClickListener(v -> { surface.resumeMatch(); whistlePaused = false; });
+        actionPanel.addView(resume, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(44)));
+        actionPanel.addView(label("Falta na área gera pênalti. O VAR pode manter ou anular a decisão. Dois amarelos expulsam.", 10, Color.LTGRAY, false));
+    }
+
+    private void buildTimeControls() {
+        actionPanel.addView(label("VELOCIDADE DA PARTIDA • CÂMERA LENTA", 10, Color.WHITE, true));
+        LinearLayout row = new LinearLayout(context);
+        String[] labels = {"0,25×", "0,5×", "1× NORMAL", "2×"};
+        float[] scales = {0.25f, 0.5f, 1.0f, 2.0f};
+        for (int i = 0; i < labels.length; i++) {
+            final float scale = scales[i];
+            Button speed = button(labels[i]);
+            speed.setOnClickListener(v -> surface.setMatchTimeScale(scale));
+            row.addView(speed, new LinearLayout.LayoutParams(0, dp(42), 1));
+        }
+        actionPanel.addView(row);
     }
 
     private void showPauseMenu() {
         surface.pauseMatch();
         whistlePaused = true;
-        String[] options = {"CONTINUAR", "TROCAR PARA MODO JOGADOR", "TROCAR PARA MODO ÁRBITRO", "ENCERRAR PARTIDA"};
+        String[] options = role == 0
+                ? new String[]{"CONTINUAR", "ABRIR PAINEL DE ÁRBITRO", "ENCERRAR PARTIDA"}
+                : new String[]{"CONTINUAR", "DECISÕES DE ARBITRAGEM", "TROCAR PARA MODO JOGADOR", "ENCERRAR PARTIDA"};
         new AlertDialog.Builder(context).setTitle("PAUSA DA PARTIDA").setItems(options, (dialog, which) -> {
             if (which == 0) {
                 if (whistlePaused) { surface.resumeMatch(); whistlePaused = false; }
-            } else if (which == 1 || which == 2) {
-                surface.pauseMatch();
-                setRole(which == 2 ? 1 : 0);
+            } else if (role == 0 && which == 1) {
+                setRole(1);
+            } else if (role == 1 && which == 1) {
+                setRole(1);
+            } else if (role == 1 && which == 2) {
+                setRole(0);
                 surface.resumeMatch();
                 whistlePaused = false;
             } else {
