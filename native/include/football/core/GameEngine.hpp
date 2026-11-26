@@ -30,6 +30,7 @@ public:
     bool refereeSendOff(int playerId);
     bool refereeIssueCard(int playerId, int cardType);
     bool refereeCallFoul(int playerId);
+    bool refereePlayAdvantage(int playerId);
     bool refereeCallOffside(int playerId);
     bool refereeRequestVar();
     bool refereeResolveVar(bool uphold);

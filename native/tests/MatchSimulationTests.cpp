@@ -19,6 +19,7 @@ struct MatchSimulationTestAccess {
     static void setBallMotion(MatchSimulation& match, Vec2 velocity) {
         match.ball_.velocity = velocity;
     }
+    static void setLastTouchTeam(MatchSimulation& match, int team) { match.ball_.lastTouchTeam = team; }
 };
 }
 
@@ -176,6 +177,64 @@ int main() {
     assert(penaltyMatch.ball().owner == 10);
     assert(std::fabs(penaltyMatch.ball().position.x - 29.5f) < 0.001f);
 
+    football::MatchSimulation throwIn;
+    throwIn.start();
+    football::MatchSimulationTestAccess::setBall(throwIn, {4.0f, 54.8f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(throwIn, {0.0f, 4.0f});
+    throwIn.update(0.05f);
+    assert(throwIn.state() == football::MatchState::Paused);
+    assert(throwIn.event() == football::MatchEvent::ThrowIn);
+    assert(throwIn.restartTeam() == 1);
+    assert(throwIn.restartPlay());
+    assert(throwIn.ball().owner >= 11 && throwIn.ball().owner < 22);
+
+    football::MatchSimulation corner;
+    corner.start();
+    football::MatchSimulationTestAccess::setBall(corner, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(corner, {15.0f, 0.0f});
+    football::MatchSimulationTestAccess::setLastTouchTeam(corner, 1);
+    corner.update(0.05f);
+    assert(corner.event() == football::MatchEvent::Corner);
+    assert(corner.restartTeam() == 0);
+    assert(corner.restartPlay());
+    assert(corner.ball().position.x > 35.0f);
+    assert(std::fabs(corner.ball().position.y) > 54.0f);
+
+    football::MatchSimulation goalKick;
+    goalKick.start();
+    football::MatchSimulationTestAccess::setBall(goalKick, {35.5f, 8.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(goalKick, {15.0f, 0.0f});
+    goalKick.update(0.05f);
+    assert(goalKick.event() == football::MatchEvent::GoalKick);
+    assert(goalKick.restartTeam() == 1);
+    assert(goalKick.restartPlay());
+    assert(goalKick.ball().owner == 11);
+
+    football::MatchSimulation advantage;
+    advantage.start();
+    advantage.setControlRole(football::ControlRole::Referee);
+    assert(advantage.playAdvantage(12));
+    assert(advantage.event() == football::MatchEvent::Advantage);
+    football::MatchSimulationTestAccess::setBall(advantage, {1.0f, 0.0f}, 10);
+    advantage.update(0.05f);
+    assert(advantage.event() == football::MatchEvent::None);
+    assert(advantage.state() == football::MatchState::Running);
+
+    football::MatchSimulation goalVar;
+    goalVar.start();
+    football::MatchSimulationTestAccess::setBall(goalVar, {35.5f, 0.0f}, -1);
+    football::MatchSimulationTestAccess::setBallMotion(goalVar, {20.0f, 0.0f});
+    goalVar.update(0.05f);
+    goalVar.setControlRole(football::ControlRole::Referee);
+    assert(goalVar.requestVarReview());
+    assert(goalVar.resolveVar(false));
+    assert(goalVar.score(0) == 0);
+    assert(goalVar.state() == football::MatchState::Paused);
+    assert(goalVar.event() == football::MatchEvent::GoalKick);
+    assert(goalVar.restartTeam() == 1);
+    assert(goalVar.restartPlay());
+    assert(goalVar.state() == football::MatchState::Running);
+
     football::MatchSimulation match;
     assert(match.playerCount() == 22);
     assert(match.activePlayerCount(0) == 11 && match.activePlayerCount(1) == 11);
@@ -222,7 +281,6 @@ int main() {
     assert(match.players()[13].animation == football::PlayerAnimation::Dismissal);
     assert(!match.command(10, football::PlayerAction::Shoot, -1, 1.0f, 0.0f));
     match.setControlRole(football::ControlRole::Referee);
-    match.pause();
     assert(match.callFoul(14));
     assert(match.event() == football::MatchEvent::Foul);
     assert(match.restartTeam() == 0);

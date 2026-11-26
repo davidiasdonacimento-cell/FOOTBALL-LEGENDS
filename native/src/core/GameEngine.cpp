@@ -36,6 +36,7 @@ bool GameEngine::refereeSendOff(int playerId) {
 }
 bool GameEngine::refereeIssueCard(int playerId, int cardType) { return match_.issueCard(playerId, cardType); }
 bool GameEngine::refereeCallFoul(int playerId) { return match_.callFoul(playerId); }
+bool GameEngine::refereePlayAdvantage(int playerId) { return match_.playAdvantage(playerId); }
 bool GameEngine::refereeCallOffside(int playerId) { return match_.callOffside(playerId); }
 bool GameEngine::refereeRequestVar() { return match_.requestVarReview(); }
 bool GameEngine::refereeResolveVar(bool uphold) { return match_.resolveVar(uphold); }

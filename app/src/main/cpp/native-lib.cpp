@@ -102,6 +102,11 @@ Java_com_footballlegends_mobile_NativeBridge_nativeRefereeCallFoul(JNIEnv*, jcla
     return JNI_FALSE;
 }
 extern "C" JNIEXPORT jboolean JNICALL
+Java_com_footballlegends_mobile_NativeBridge_nativeRefereePlayAdvantage(JNIEnv*, jclass, jlong handle, jint playerId) {
+    if (auto* engine = fromHandle(handle)) return engine->refereePlayAdvantage(playerId) ? JNI_TRUE : JNI_FALSE;
+    return JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL
 Java_com_footballlegends_mobile_NativeBridge_nativeRefereeCallOffside(JNIEnv*, jclass, jlong handle, jint playerId) {
     if (auto* engine = fromHandle(handle)) return engine->refereeCallOffside(playerId) ? JNI_TRUE : JNI_FALSE;
     return JNI_FALSE;

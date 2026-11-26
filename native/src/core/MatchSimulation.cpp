@@ -57,7 +57,13 @@ void MatchSimulation::reset() {
     event_ = MatchEvent::None;
     eventBeforeVar_ = MatchEvent::None;
     ballBeforeVar_ = {};
+    ballBeforeGoal_ = {};
+    scoresBeforeVar_[0] = scoresBeforeVar_[1] = 0;
     eventPlayer_ = -1;
+    advantageActive_ = false;
+    advantageTeam_ = -1;
+    advantagePlayer_ = -1;
+    advantageSeconds_ = 0.0f;
     restartTeam_ = -1;
     restartPosition_ = {};
     refereePosition_ = {0.0f, -5.0f};
@@ -235,10 +241,6 @@ void MatchSimulation::updateBall(float dt) {
     const float drag = std::pow(kBallFriction, dt * 60.0f);
     ball_.velocity.x *= drag;
     ball_.velocity.y *= drag;
-    if (std::fabs(ball_.position.y) > kPitchHalfWidth) {
-        ball_.position.y = std::copysign(kPitchHalfWidth, ball_.position.y);
-        ball_.velocity.y *= -0.55f;
-    }
 
     // Goal frame collision: two posts and a crossbar on each end line.
     constexpr float kGoalHalfWidth = 3.66f;
@@ -280,6 +282,7 @@ void MatchSimulation::updateBall(float dt) {
         const bool insideGoal = std::fabs(ball_.position.y) <= kGoalHalfWidth - kBallRadius &&
                                 ball_.height <= kGoalHeight - kBallRadius;
         if (insideGoal) {
+            ballBeforeGoal_ = ball_;
             ++scores_[scoringTeam];
             event_ = MatchEvent::Goal;
             eventPlayer_ = -1;
@@ -294,11 +297,32 @@ void MatchSimulation::updateBall(float dt) {
             state_ = MatchState::Paused;
             return;
         }
-        // A shot outside the frame cannot count as a goal.
-        ball_.position.x = goalLine - std::copysign(0.20f, ball_.position.x);
-        ball_.velocity.x = -std::copysign(std::fabs(ball_.velocity.x) * 0.45f, ball_.position.x);
+        const int defendingTeam = ball_.position.x > 0.0f ? 1 : 0;
+        const int attackingTeam = 1 - defendingTeam;
+        event_ = ball_.lastTouchTeam == defendingTeam ? MatchEvent::Corner : MatchEvent::GoalKick;
+        restartTeam_ = event_ == MatchEvent::Corner ? attackingTeam : defendingTeam;
+        restartPosition_ = {goalLine, std::copysign(kPitchHalfWidth, ball_.position.y)};
+        ball_.position = restartPosition_;
+        ball_.velocity = {};
+        ball_.height = 0.0f;
+        ball_.verticalVelocity = 0.0f;
+        ball_.owner = -1;
+        state_ = MatchState::Paused;
+        return;
     }
-    if (std::fabs(ball_.position.x) <= kPitchHalfLength) {
+    if (std::fabs(ball_.position.x) <= kPitchHalfLength && std::fabs(ball_.position.y) > kPitchHalfWidth) {
+        event_ = MatchEvent::ThrowIn;
+        restartTeam_ = ball_.lastTouchTeam < 0 ? 1 : 1 - ball_.lastTouchTeam;
+        restartPosition_ = {std::max(-kPitchHalfLength, std::min(kPitchHalfLength, ball_.position.x)), std::copysign(kPitchHalfWidth, ball_.position.y)};
+        ball_.position = restartPosition_;
+        ball_.velocity = {};
+        ball_.height = 0.0f;
+        ball_.verticalVelocity = 0.0f;
+        ball_.owner = -1;
+        state_ = MatchState::Paused;
+        return;
+    }
+    if (std::fabs(ball_.position.x) <= kPitchHalfLength && std::fabs(ball_.position.y) <= kPitchHalfWidth) {
         for (int team = 0; team < 2; ++team) {
             const int keeperId = team * 11;
             Player& keeper = players_[keeperId];
@@ -328,6 +352,26 @@ void MatchSimulation::update(float deltaSeconds) {
     updateTeam(dt, 0);
     updateTeam(dt, 1);
     updateBall(dt);
+    if (advantageActive_) {
+        if (event_ != MatchEvent::Advantage) {
+            const int offender = advantagePlayer_;
+            advantageActive_ = false;
+            registerFoul(offender);
+        } else if (ball_.owner >= 0 && players_[ball_.owner].team == advantageTeam_) {
+            advantageActive_ = false;
+            advantageTeam_ = -1;
+            advantagePlayer_ = -1;
+            advantageSeconds_ = 0.0f;
+            clearEvent();
+        } else {
+            advantageSeconds_ = std::max(0.0f, advantageSeconds_ - dt);
+            if (advantageSeconds_ <= 0.0f) {
+                const int offender = advantagePlayer_;
+                advantageActive_ = false;
+                registerFoul(offender);
+            }
+        }
+    }
     updateReferee(dt);
     if (cinematicSlowMoRemaining_ > 0.0f) {
         cinematicSlowMoRemaining_ = std::max(0.0f, cinematicSlowMoRemaining_ - dt);
@@ -525,8 +569,18 @@ void MatchSimulation::registerFoul(int playerId) {
 }
 bool MatchSimulation::callFoul(int playerId) {
     if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
-    if (state_ == MatchState::Finished || state_ == MatchState::Ready) return false;
+    if (state_ != MatchState::Running) return false;
     registerFoul(playerId);
+    return true;
+}
+bool MatchSimulation::playAdvantage(int playerId) {
+    if (controlRole_ != ControlRole::Referee || state_ != MatchState::Running || advantageActive_ || playerId < 0 || playerId >= kPlayerCount || players_[playerId].sentOff) return false;
+    advantageActive_ = true;
+    advantageTeam_ = 1 - players_[playerId].team;
+    advantagePlayer_ = playerId;
+    advantageSeconds_ = 3.0f;
+    event_ = MatchEvent::Advantage;
+    eventPlayer_ = playerId;
     return true;
 }
 bool MatchSimulation::callOffside(int playerId) {
@@ -546,15 +600,35 @@ bool MatchSimulation::callOffside(int playerId) {
 bool MatchSimulation::requestVarReview() {
     if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ == MatchEvent::None || event_ == MatchEvent::VarReview) return false;
     eventBeforeVar_ = event_;
-    ballBeforeVar_ = ball_;
+    ballBeforeVar_ = event_ == MatchEvent::Goal ? ballBeforeGoal_ : ball_;
+    scoresBeforeVar_[0] = scores_[0];
+    scoresBeforeVar_[1] = scores_[1];
     event_ = MatchEvent::VarReview;
     return true;
 }
 bool MatchSimulation::resolveVar(bool upholdDecision) {
     if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ != MatchEvent::VarReview) return false;
-    if (upholdDecision) event_ = eventBeforeVar_;
-    else {
+    if (upholdDecision) {
+        event_ = eventBeforeVar_;
+    } else if (eventBeforeVar_ == MatchEvent::Goal) {
         ball_ = ballBeforeVar_;
+        scores_[0] = scoresBeforeVar_[0];
+        scores_[1] = scoresBeforeVar_[1];
+        const int defendingTeam = ballBeforeVar_.position.x > 0.0f ? 1 : 0;
+        event_ = MatchEvent::GoalKick;
+        restartTeam_ = defendingTeam;
+        restartPosition_ = {defendingTeam == 0 ? -29.5f : 29.5f, 0.0f};
+        ball_.position = restartPosition_;
+        ball_.velocity = {};
+        ball_.height = 0.0f;
+        ball_.verticalVelocity = 0.0f;
+        ball_.owner = -1;
+        eventPlayer_ = -1;
+        state_ = MatchState::Paused;
+    } else {
+        ball_ = ballBeforeVar_;
+        scores_[0] = scoresBeforeVar_[0];
+        scores_[1] = scoresBeforeVar_[1];
         clearEvent();
         state_ = MatchState::Running;
     }
@@ -563,22 +637,40 @@ bool MatchSimulation::resolveVar(bool upholdDecision) {
 }
 bool MatchSimulation::restartPlay() {
     if (state_ != MatchState::Paused || restartTeam_ < 0 || event_ == MatchEvent::VarReview) return false;
-    if (event_ == MatchEvent::Penalty) {
-        const float spotX = restartTeam_ == 0 ? 29.5f : -29.5f;
-        restartPosition_ = {spotX, 0.0f};
-        const int taker = restartTeam_ * 11 + 10;
-        players_[taker].position = {spotX - (restartTeam_ == 0 ? 0.9f : -0.9f), 0.0f};
-        ball_.owner = taker;
-        ball_.position = restartPosition_;
-    } else {
-        const int taker = nearestPlayer(restartTeam_, restartPosition_);
-        if (taker < 0) return false;
-        players_[taker].position = {restartPosition_.x - (restartTeam_ == 0 ? 0.9f : -0.9f), restartPosition_.y};
-        ball_.owner = taker;
-        ball_.position = restartPosition_;
-    }
+    const MatchEvent restartEvent = event_;
+    const float sign = restartPosition_.x >= 0.0f ? 1.0f : -1.0f;
+    int taker = -1;
+    if (restartEvent == MatchEvent::Penalty) {
+        restartPosition_ = {restartTeam_ == 0 ? 29.5f : -29.5f, 0.0f};
+        taker = nearestPlayer(restartTeam_, restartPosition_);
+    } else if (restartEvent == MatchEvent::GoalKick) {
+        restartPosition_ = {restartTeam_ == 0 ? -29.5f : 29.5f, 0.0f};
+        const int keeper = restartTeam_ * 11;
+        taker = players_[keeper].sentOff ? nearestPlayer(restartTeam_, restartPosition_) : keeper;
+    } else if (restartEvent == MatchEvent::Corner) {
+        restartPosition_ = {sign * (kPitchHalfLength - 0.5f), std::copysign(kPitchHalfWidth - 0.5f, restartPosition_.y)};
+        taker = nearestPlayer(restartTeam_, restartPosition_);
+    } else if (restartEvent == MatchEvent::ThrowIn) {
+        restartPosition_.x = std::max(-kPitchHalfLength + 0.5f, std::min(kPitchHalfLength - 0.5f, restartPosition_.x));
+        restartPosition_.y = std::copysign(kPitchHalfWidth - 0.5f, restartPosition_.y);
+        taker = nearestPlayer(restartTeam_, restartPosition_);
+    } else if (restartEvent == MatchEvent::Goal) {
+        restartPosition_ = {};
+        taker = nearestPlayer(restartTeam_, restartPosition_);
+    } else taker = nearestPlayer(restartTeam_, restartPosition_);
+    if (taker < 0 || players_[taker].sentOff) return false;
+    const float attackDirection = restartTeam_ == 0 ? 1.0f : -1.0f;
+    players_[taker].position = {restartPosition_.x - attackDirection * 0.9f, restartPosition_.y};
+    ball_.owner = taker;
+    ball_.position = restartPosition_;
     ball_.velocity = {};
+    ball_.height = 0.0f;
+    ball_.verticalVelocity = 0.0f;
     ball_.lastTouchTeam = restartTeam_;
+    advantageActive_ = false;
+    advantageTeam_ = -1;
+    advantagePlayer_ = -1;
+    advantageSeconds_ = 0.0f;
     clearEvent();
     state_ = MatchState::Running;
     return true;

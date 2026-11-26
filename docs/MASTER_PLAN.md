@@ -726,3 +726,28 @@ Solicitação do usuário para integrar às fases de gameplay, futebol profissio
 - Executar testes nativos e compilação Android Debug no mesmo workflow.
 - Testar o fluxo visual de gol, pausa, menu Continuar e saída no aparelho.
 - A correção não representa ainda a implementação de laterais, escanteios ou tiros de meta; esses reinícios permanecem no escopo seguinte da FASE 5.
+
+
+# 41. FASE 5 — REINÍCIOS, VANTAGEM, PÊNALTIS E VAR — 2026-11-26
+
+## Escopo implementado nesta revisão
+- **Status:** IMPLEMENTADO NO CÓDIGO; aguardando uma única execução de CI.
+- Bola que cruza a linha lateral gera lateral para a equipe adversária ao último toque.
+- Bola que cruza a linha de fundo fora da baliza gera escanteio quando o último toque é da defesa; caso contrário, tiro de meta para a defesa.
+- Reinícios posicionam a bola nas zonas correspondentes e escolhem cobrador ativo; tiro de meta prioriza o goleiro, usando atleta ativo alternativo se ele foi expulso.
+- Falta manual só é aceita durante a partida em andamento e continua distinguindo falta comum de pênalti conforme a área.
+- Botão real de vantagem integrado à interface Android, GameSurface, GameRenderer, JNI e GameEngine. A vantagem mantém o jogo ativo por uma janela curta; se a equipe beneficiada conquista a posse, a partida segue; se perde a posse ou a janela expira, a falta é marcada.
+- VAR guarda placar anterior e snapshot da bola; anular um gol também desfaz o ponto e gera tiro de meta para a defesa.
+
+## Testes de regressão adicionados
+- Lateral, escanteio e tiro de meta com equipe beneficiada definida pelo último toque.
+- Vantagem convertida em posse da equipe beneficiada.
+- VAR anulando gol, restaurando placar e encaminhando tiro de meta.
+- Os testes serão executados junto com os testes de estádio e a compilação APK Debug no workflow único desta revisão.
+
+## Limitações explícitas
+- Reposições ainda não aplicam todas as restrições de posicionamento, distância dos adversários, execução manual com as mãos no lateral ou impedimento diretamente do reinício.
+- A janela de vantagem usa posse da bola como critério; não modela intensidade da infração, oportunidade clara, distância do gol ou sinal gestual do árbitro.
+- A detecção automática de infrações permanece limitada ao desarme de alta velocidade; não há árbitro IA completo.
+- O VAR não tem replay multiângulo, linhas calibradas nem revisão automática de imagens; a decisão continua manual.
+- A aprovação de CI não substitui teste de jogabilidade, interface e desempenho em Android físico.

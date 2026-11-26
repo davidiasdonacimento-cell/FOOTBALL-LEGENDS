@@ -171,11 +171,14 @@ public final class MatchUi extends FrameLayout {
         LinearLayout decisions = new LinearLayout(context);
         Button foul = button("MARCAR FALTA");
         foul.setOnClickListener(v -> surface.refereeCallFoul(selectedPlayer));
+        Button advantage = button("DAR VANTAGEM");
+        advantage.setOnClickListener(v -> surface.refereePlayAdvantage(selectedPlayer));
         Button offside = button("IMPEDIMENTO");
         offside.setOnClickListener(v -> surface.refereeCallOffside(selectedPlayer));
         Button var = button("REVISAR VAR");
         var.setOnClickListener(v -> surface.refereeRequestVar());
         decisions.addView(foul, new LinearLayout.LayoutParams(0, dp(46), 1));
+        decisions.addView(advantage, new LinearLayout.LayoutParams(0, dp(46), 1));
         decisions.addView(offside, new LinearLayout.LayoutParams(0, dp(46), 1));
         decisions.addView(var, new LinearLayout.LayoutParams(0, dp(46), 1));
         actionPanel.addView(decisions);
@@ -194,7 +197,7 @@ public final class MatchUi extends FrameLayout {
         Button resume = button("RETOMAR PARTIDA");
         resume.setOnClickListener(v -> { surface.resumeMatch(); whistlePaused = false; });
         actionPanel.addView(resume, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(44)));
-        actionPanel.addView(label("Falta na área gera pênalti. O VAR pode manter ou anular a decisão. Dois amarelos expulsam.", 10, Color.LTGRAY, false));
+        actionPanel.addView(label("Laterais, escanteios, tiros de meta e vantagem são decididos pelo motor. O VAR pode manter ou anular a decisão. Dois amarelos expulsam.", 10, Color.LTGRAY, false));
     }
 
     private void buildTimeControls() {

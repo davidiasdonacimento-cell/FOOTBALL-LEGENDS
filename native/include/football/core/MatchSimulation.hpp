@@ -8,7 +8,7 @@ struct Vec2 { float x{0.0f}; float y{0.0f}; };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
 enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle, KeeperDive, KeeperCatch };
 enum class ControlRole : std::uint8_t { Player, Referee };
-enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal };
+enum class MatchEvent : std::uint8_t { None, Foul, Offside, Penalty, VarReview, Goal, ThrowIn, Corner, GoalKick, Advantage };
 enum class PlayerAnimation : std::uint8_t { None, Protest, Dismissal, KeeperDive, KeeperCatch, KeeperFall, KeeperRecover, KeeperHighCatch };
 
 struct Player {
@@ -54,6 +54,7 @@ public:
     bool setPlayerSentOff(int playerId, bool sentOff);
     bool issueCard(int playerId, int cardType);
     bool callFoul(int playerId);
+    bool playAdvantage(int playerId);
     bool callOffside(int playerId);
     bool requestVarReview();
     bool resolveVar(bool upholdDecision);
@@ -109,7 +110,13 @@ private:
     MatchEvent event_{MatchEvent::None};
     MatchEvent eventBeforeVar_{MatchEvent::None};
     Ball ballBeforeVar_{};
+    Ball ballBeforeGoal_{};
+    int scoresBeforeVar_[2]{0, 0};
     int eventPlayer_{-1};
+    bool advantageActive_{false};
+    int advantageTeam_{-1};
+    int advantagePlayer_{-1};
+    float advantageSeconds_{0.0f};
     int restartTeam_{-1};
     Vec2 restartPosition_{};
     Vec2 refereePosition_{};

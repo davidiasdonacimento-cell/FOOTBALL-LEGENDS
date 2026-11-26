@@ -64,6 +64,7 @@ public final class GameRenderer implements GLSurfaceView.Renderer {
 
     boolean refereeIssueCard(int playerId, int cardType) { return engineHandle != 0L && NativeBridge.nativeRefereeIssueCard(engineHandle, playerId, cardType); }
     boolean refereeCallFoul(int playerId) { return engineHandle != 0L && NativeBridge.nativeRefereeCallFoul(engineHandle, playerId); }
+    boolean refereePlayAdvantage(int playerId) { return engineHandle != 0L && NativeBridge.nativeRefereePlayAdvantage(engineHandle, playerId); }
     boolean refereeCallOffside(int playerId) { return engineHandle != 0L && NativeBridge.nativeRefereeCallOffside(engineHandle, playerId); }
     boolean refereeRequestVar() { return engineHandle != 0L && NativeBridge.nativeRefereeRequestVar(engineHandle); }
     boolean refereeResolveVar(boolean uphold) { return engineHandle != 0L && NativeBridge.nativeRefereeResolveVar(engineHandle, uphold); }
