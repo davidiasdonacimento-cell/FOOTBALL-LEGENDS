@@ -7,6 +7,7 @@ namespace football {
 struct Vec2 { float x{0.0f}; float y{0.0f}; };
 enum class MatchState : std::uint8_t { Ready, Running, Paused, Finished };
 enum class PlayerAction : std::uint8_t { Pass, Shoot, Dribble, Sprint, Tackle };
+enum class ControlRole : std::uint8_t { Player, Referee };
 
 struct Player {
     int id{0};
@@ -44,6 +45,11 @@ public:
                  float directionX = 0.0f, float directionY = 0.0f);
     bool setPlayerSentOff(int playerId, bool sentOff);
     void setSpectatorMode(bool enabled);
+    void setControlRole(ControlRole role);
+    ControlRole controlRole() const { return controlRole_; }
+    bool selectControlledPlayer(int playerId);
+    bool setPlayerMovement(float x, float y);
+    int controlledPlayer() const { return controlledPlayer_; }
 
     MatchState state() const { return state_; }
     float matchSeconds() const { return matchSeconds_; }
@@ -69,6 +75,9 @@ private:
     float matchSeconds_{0.0f};
     int scores_[2]{0, 0};
     bool spectatorMode_{false};
+    ControlRole controlRole_{ControlRole::Player};
+    int controlledPlayer_{10};
+    Vec2 playerInput_{};
 };
 
 } // namespace football
