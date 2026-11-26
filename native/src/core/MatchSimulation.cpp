@@ -54,6 +54,7 @@ void MatchSimulation::reset() {
     initializeTeams();
     event_ = MatchEvent::None;
     eventBeforeVar_ = MatchEvent::None;
+    ballBeforeVar_ = {};
     eventPlayer_ = -1;
     restartTeam_ = -1;
     restartPosition_ = {};
@@ -357,11 +358,16 @@ bool MatchSimulation::detectOffside(int attackingTeam, int receiverId) {
     const bool inOpponentHalf = receiverProgress > 0.0f;
     const bool aheadOfBall = receiverProgress > ballProgress + 0.15f;
     const bool aheadOfSecondLast = receiverProgress > defenders[1] + 0.25f;
-    return inOpponentHalf && aheadOfBall && aheadOfSecondLast;
+    const bool offside = inOpponentHalf && aheadOfBall && aheadOfSecondLast;
+    offsideLineVisible_ = offside;
+    return offside;
 }
 void MatchSimulation::registerFoul(int playerId) {
     if (playerId < 0 || playerId >= kPlayerCount) return;
     eventPlayer_ = playerId;
+    offsideLineVisible_ = false;
+    ball_.owner = -1;
+    ball_.velocity = {};
     const int attackingTeam = 1 - players_[playerId].team;
     const bool inPenaltyArea = attackingTeam == 0
         ? (ball_.position.x > 25.0f && std::fabs(ball_.position.y) < 16.0f)
@@ -383,6 +389,7 @@ bool MatchSimulation::callFoul(int playerId) {
 bool MatchSimulation::callOffside(int playerId) {
     if (controlRole_ != ControlRole::Referee || playerId < 0 || playerId >= kPlayerCount || state_ == MatchState::Finished || state_ == MatchState::Ready) return false;
     event_ = MatchEvent::Offside;
+    offsideLineVisible_ = true;
     eventPlayer_ = playerId;
     restartTeam_ = 1 - players_[playerId].team;
     restartPosition_ = ball_.position;
@@ -396,6 +403,7 @@ bool MatchSimulation::callOffside(int playerId) {
 bool MatchSimulation::requestVarReview() {
     if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ == MatchEvent::None || event_ == MatchEvent::VarReview) return false;
     eventBeforeVar_ = event_;
+    ballBeforeVar_ = ball_;
     event_ = MatchEvent::VarReview;
     return true;
 }
@@ -403,6 +411,7 @@ bool MatchSimulation::resolveVar(bool upholdDecision) {
     if (controlRole_ != ControlRole::Referee || state_ != MatchState::Paused || event_ != MatchEvent::VarReview) return false;
     if (upholdDecision) event_ = eventBeforeVar_;
     else {
+        ball_ = ballBeforeVar_;
         clearEvent();
         state_ = MatchState::Running;
     }
@@ -415,11 +424,13 @@ bool MatchSimulation::restartPlay() {
         const float spotX = restartTeam_ == 0 ? 29.5f : -29.5f;
         restartPosition_ = {spotX, 0.0f};
         const int taker = restartTeam_ * 11 + 10;
+        players_[taker].position = {spotX - (restartTeam_ == 0 ? 0.9f : -0.9f), 0.0f};
         ball_.owner = taker;
         ball_.position = restartPosition_;
     } else {
         const int taker = nearestPlayer(restartTeam_, restartPosition_);
         if (taker < 0) return false;
+        players_[taker].position = {restartPosition_.x - (restartTeam_ == 0 ? 0.9f : -0.9f), restartPosition_.y};
         ball_.owner = taker;
         ball_.position = restartPosition_;
     }
@@ -432,6 +443,7 @@ bool MatchSimulation::restartPlay() {
 void MatchSimulation::clearEvent() {
     event_ = MatchEvent::None;
     eventBeforeVar_ = MatchEvent::None;
+    ballBeforeVar_ = {};
     eventPlayer_ = -1;
     restartTeam_ = -1;
     offsideLineVisible_ = false;
