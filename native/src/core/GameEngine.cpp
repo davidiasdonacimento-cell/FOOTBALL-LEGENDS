@@ -28,5 +28,6 @@ bool GameEngine::refereeSendOff(int playerId) {
     if (match_.controlRole() != ControlRole::Referee) return false;
     return match_.setPlayerSentOff(playerId, true);
 }
+bool GameEngine::refereeIssueCard(int playerId, int cardType) { return match_.issueCard(playerId, cardType); }
 
 } // namespace football
