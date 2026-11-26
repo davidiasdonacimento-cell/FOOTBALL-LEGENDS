@@ -33,5 +33,12 @@ public final class GameSurface extends GLSurfaceView {
     public void resumeMatch() { queueEvent(gameRenderer::resumeMatch); }
     public void resetMatch() { queueEvent(gameRenderer::resetMatch); }
 
+
+    public void setControlRole(int role) { queueEvent(() -> gameRenderer.setControlRole(role)); }
+    public void selectPlayer(int playerId) { queueEvent(() -> gameRenderer.selectPlayer(playerId)); }
+    public void movePlayer(float x, float y) { queueEvent(() -> gameRenderer.movePlayer(x, y)); }
+    public void playerAction(int action, int target, float x, float y) { queueEvent(() -> gameRenderer.playerAction(action, target, x, y)); }
+    public void refereeSendOff(int playerId) { queueEvent(() -> gameRenderer.refereeSendOff(playerId)); }
+
     public void release() { queueEvent(gameRenderer::releaseNativeEngine); }
 }
