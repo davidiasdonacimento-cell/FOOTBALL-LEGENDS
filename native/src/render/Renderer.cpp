@@ -280,14 +280,13 @@ void Renderer::render() {
         const float bob=pose==3.0F?-.22F*poseBlend:std::sin(phase*2.0F)*.012F;
         const Mat4 model=modelAt(px,bob,pz,yaw);
         const Mat4 mvp=multiply(vp,model);
-        const float protest=matchActive_?matchPositions_[i].protest:0.0F;
-        const float protestPose=protest>0.0F?1.05F:0.0F;
+        const float protestBlend=(pose==1.0F||pose==2.0F)?std::min(1.0F,poseTime*2.8F):0.0F;
         const bool diving=pose==3.0F;
         const bool catching=pose==4.0F;
-        const float armSwing=catching?1.15F:(diving?1.25F:std::sin(phase)*.075F+protestPose);
-        const float oppositeArm=catching?1.15F:(diving?-1.25F:-armSwing);
+        const float armSwing=catching?1.15F*poseBlend:(diving?1.25F*poseBlend:std::sin(phase)*.075F+1.05F*protestBlend);
+        const float oppositeArm=catching?1.15F*poseBlend:(diving?-1.25F*poseBlend:-armSwing);
         const float legSwing=diving?.45F:std::sin(phase)*.045F;
-        const Mat4 rootPose=diving?rotationAroundX({0,.82F,0},1.20F):identity();
+        const Mat4 rootPose=diving?rotationAroundX({0,.82F,0},1.20F*poseBlend):identity();
         const Mat4 bones[5]={
             rootPose,
             rotationAroundX({-.20F,1.31F,0},armSwing),
