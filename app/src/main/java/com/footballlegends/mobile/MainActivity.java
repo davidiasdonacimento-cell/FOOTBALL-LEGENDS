@@ -22,6 +22,7 @@ public final class MainActivity extends Activity {
         MatchUi matchUi = new MatchUi(this, gameSurface);
         matchUi.setVisibility(View.GONE);
         LobbyUi lobbyUi = new LobbyUi(this, gameSurface, matchUi);
+        matchUi.setExitAction(() -> lobbyUi.setVisibility(View.VISIBLE));
         root.addView(lobbyUi, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
